@@ -1,3 +1,0 @@
----
-# User with which to access the seed hypervisor via SSH.
-ansible_user: "{{ kayobe_ansible_user }}"

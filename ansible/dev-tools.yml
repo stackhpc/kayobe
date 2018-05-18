@@ -1,5 +1,0 @@
----
-- name: Ensure development tools are installed
-  hosts: seed-hypervisor:seed:overcloud
-  roles:
-    - role: dev-tools
