@@ -45,11 +45,17 @@ class TestCase(unittest.TestCase):
         self.assertEqual(0, result)
         mock_install.assert_called_once_with(parsed_args)
         expected_calls = [
-            mock.call(mock.ANY, [utils.get_data_files_path(
-                "ansible", "bootstrap.yml")]),
-            mock.call(mock.ANY, [
-                utils.get_data_files_path("ansible", "kolla-ansible.yml")
-            ], tags="install"),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "bootstrap.yml")],
+                ignore_limit=True,
+            ),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
+                tags="install",
+                ignore_limit=True
+            ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
 
@@ -66,11 +72,17 @@ class TestCase(unittest.TestCase):
         mock_install.assert_called_once_with(parsed_args, force=True)
         mock_prune.assert_called_once_with(parsed_args)
         expected_calls = [
-            mock.call(mock.ANY, [utils.get_data_files_path(
-                "ansible", "bootstrap.yml")]),
-            mock.call(mock.ANY, [
-                utils.get_data_files_path("ansible", "kolla-ansible.yml")
-            ], tags="install"),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "bootstrap.yml")],
+                ignore_limit=True,
+            ),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
+                tags="install",
+                ignore_limit=True
+            ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
 
@@ -381,6 +393,7 @@ class TestCase(unittest.TestCase):
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
                 tags="config",
+                ignore_limit=True,
             ),
             mock.call(
                 mock.ANY,
@@ -755,10 +768,12 @@ class TestCase(unittest.TestCase):
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
                 tags="config",
+                ignore_limit=True,
             ),
             mock.call(
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "kolla-bifrost.yml")],
+                ignore_limit=True,
             ),
             mock.call(
                 mock.ANY,
@@ -801,11 +816,16 @@ class TestCase(unittest.TestCase):
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
                 tags="config",
+                ignore_limit=True,
+            ),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "kolla-bifrost.yml")],
+                ignore_limit=True,
             ),
             mock.call(
                 mock.ANY,
                 [
-                    utils.get_data_files_path("ansible", "kolla-bifrost.yml"),
                     utils.get_data_files_path("ansible",
                                               "seed-service-upgrade-prep.yml")
                 ],
@@ -839,8 +859,10 @@ class TestCase(unittest.TestCase):
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
 
     @mock.patch.object(commands.KayobeAnsibleMixin,
+                       "run_kayobe_playbooks")
+    @mock.patch.object(commands.KayobeAnsibleMixin,
                        "run_kayobe_playbook")
-    def test_overcloud_inventory_discover(self, mock_run):
+    def test_overcloud_inventory_discover(self, mock_run_one, mock_run):
         command = commands.OvercloudInventoryDiscover(TestApp(), [])
         parser = command.get_parser("test")
         parsed_args = parser.parse_args([])
@@ -858,10 +880,15 @@ class TestCase(unittest.TestCase):
                 mock.ANY,
                 utils.get_data_files_path("ansible", "ip-allocation.yml"),
             ),
+        ]
+        self.assertEqual(expected_calls, mock_run_one.call_args_list)
+
+        expected_calls = [
             mock.call(
                 mock.ANY,
-                utils.get_data_files_path("ansible", "kolla-ansible.yml"),
+                [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
                 tags="config",
+                ignore_limit=True,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -990,6 +1017,7 @@ class TestCase(unittest.TestCase):
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
                 tags="config",
+                ignore_limit=True,
             ),
             mock.call(
                 mock.ANY,
