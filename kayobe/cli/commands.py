@@ -144,7 +144,8 @@ class KollaAnsibleMixin(object):
         return kolla_ansible.run_seed(*args, **kwargs)
 
 
-class ControlHostBootstrap(KayobeAnsibleMixin, VaultMixin, Command):
+class ControlHostBootstrap(KayobeAnsibleMixin, KollaAnsibleMixin, VaultMixin,
+                           Command):
     """Bootstrap the Kayobe control environment.
 
     * Downloads and installs Ansible roles from Galaxy.
@@ -157,9 +158,32 @@ class ControlHostBootstrap(KayobeAnsibleMixin, VaultMixin, Command):
         ansible.install_galaxy_roles(parsed_args)
         playbooks = _build_playbook_list("bootstrap")
         self.run_kayobe_playbooks(parsed_args, playbooks, ignore_limit=True)
+
+        passwords_exist = ansible.passwords_yml_exists(parsed_args)
+        if passwords_exist:
+            # Install and generate configuration - necessary for post-deploy.
+            ka_tags = None
+        else:
+            ka_tags = "install"
         playbooks = _build_playbook_list("kolla-ansible")
-        self.run_kayobe_playbooks(parsed_args, playbooks, tags="install",
+        self.run_kayobe_playbooks(parsed_args, playbooks, tags=ka_tags,
                                   ignore_limit=True)
+
+        if passwords_exist:
+            # If we are bootstrapping a control host for an existing
+            # environment, we should also generate the admin-openrc.sh and
+            # public-openrc.sh scripts that provide admin credentials.
+
+            # FIXME: Fudge to work around incorrect configuration path.
+            extra_vars = {"node_config_directory":
+                          parsed_args.kolla_config_path}
+            self.run_kolla_ansible_overcloud(parsed_args, "post-deploy",
+                                             extra_vars=extra_vars)
+            # Create an environment file for accessing the public API as the
+            # admin user.
+            playbooks = _build_playbook_list("public-openrc")
+            self.run_kayobe_playbooks(parsed_args, playbooks,
+                                      ignore_limit=True)
 
 
 class ControlHostUpgrade(KayobeAnsibleMixin, VaultMixin, Command):
