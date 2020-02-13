@@ -29,15 +29,19 @@
   version: v1.10.0
 - src: stackhpc.mellanox-switch
   version: v1.0.0
-- src: stackhpc.os-images
-  version: v1.7.0
-- src: stackhpc.os-ironic-state
-  version: v1.2.0
-- src: stackhpc.os-networks
-  version: v1.3.1
-- src: stackhpc.os-openstackclient
-  version: v1.3.0
-- src: stackhpc.os-shade
-  version: v1.3.0
+- src: https://github.com/stackhpc/ansible-role-os-images
+  version: master
+  name: stackhpc.os-images
+- src: https://github.com/stackhpc/ansible-role-os-ironic-state
+  version: openstacksdk
+  name: stackhpc.os-ironic-state
+- src: https://github.com/stackhpc/ansible-role-os-networks
+  version: openstacksdk
+  name: stackhpc.os-networks
+- src: https://github.com/stackhpc/ansible-role-os-openstackclient
+  version: centos8
+  name: stackhpc.os-openstackclient
+- src: stackhpc.os_openstacksdk
+  version: v1.0.0
 - src: yatesr.timezone
   version: 1.2.0
