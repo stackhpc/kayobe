@@ -21,7 +21,7 @@
     - block:
         - name: Ensure the python-virtualenv package is installed
           package:
-            name: python-virtualenv
+            name: python3-virtualenv
             state: present
           become: True
 
@@ -33,6 +33,7 @@
             # Site packages are required for using the yum and selinux python
             # modules, which are not available via PyPI.
             virtualenv_site_packages: True
+            virtualenv_python: python3
           become: True
 
         - name: Ensure kolla-ansible virtualenv has docker SDK for python installed

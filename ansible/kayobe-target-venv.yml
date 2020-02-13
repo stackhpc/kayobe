@@ -27,7 +27,7 @@
 
         - name: Ensure the python-virtualenv package is installed
           package:
-            name: python-virtualenv
+            name: python3-virtualenv
             state: present
           become: True
 
@@ -77,7 +77,7 @@
     - block:
         - name: Ensure the python-setuptools package is installed
           package:
-            name: python-setuptools
+            name: python3-setuptools
             state: present
           become: True
 

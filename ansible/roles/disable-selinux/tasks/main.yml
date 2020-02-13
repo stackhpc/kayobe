@@ -2,7 +2,8 @@
 - name: Ensure required packages are installed
   package:
     name:
-      - libselinux-python
+      #- libselinux-python
+      - python3-libselinux
     state: present
   become: True
 
