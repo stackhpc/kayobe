@@ -47,22 +47,31 @@
   pip:
     name: "{{ item.name }}"
     state: latest
-    virtualenv: "{{ kolla_ansible_venv }}"
-    virtualenv_python: "{{ kolla_ansible_venv_python }}"
+    executable: pip3
+    virtualenv: "{{ kolla_ansible_venv or omit }}"
+    virtualenv_python: "{{ kolla_ansible_venv_python if kolla_ansible_venv is not none else omit }}"
   with_items:
     - { name: pip }
 
-- name: Ensure python requirements file exists
-  template:
-    src: requirements.txt.j2
-    dest: "{{ kolla_ansible_venv }}/requirements.txt"
-
 - name: Ensure required Python packages are installed
+  vars:
+    kolla_ansible_packages:
+      # Install Kolla Ansible from source or PyPI.
+      - {% if kolla_ansible_ctl_install_type == 'source' %}
+        {{ kolla_ansible_source_path }}
+        {% else %}
+        kolla-ansible=={{ kolla_openstack_release }}
+        {% endif %}
+      # Limit the version of ansible used by kolla-ansible to avoid new
+      # releases from breaking tested code. Changes to this limit should be
+      # tested.
+      - ansible>=2.6,<2.9
   pip:
-    requirements: "{{ kolla_ansible_venv }}/requirements.txt"
+    name: "{{ kolla_ansible_packages + kolla_ansible_venv_extra_requirements | default([]) }}"
     state: latest
+    executable: pip3
     extra_args: "{% if kolla_upper_constraints_file %}-c {{ kolla_upper_constraints_file }}{% endif %}"
-    virtualenv: "{{ kolla_ansible_venv }}"
+    virtualenv: "{{ kolla_ansible_venv or omit }}"
 
 # This is a workaround for the lack of a python package for libselinux-python
 # on PyPI. Without using --system-site-packages to create the virtualenv, it
@@ -76,6 +85,7 @@
     dest: "{{ kolla_ansible_venv }}/lib/python2.7/site-packages/selinux"
     state: link
   when:
+    - kolla_ansible_venv_python is not none
     - ansible_os_family == 'RedHat'
     - ansible_selinux != False
     - ansible_selinux.status != 'disabled'
