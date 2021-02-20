@@ -6,6 +6,8 @@
   version: e12d38378ae127c9c61d170fa4ba4729f2c5f2ad
 - src: MichaelRigart.interfaces
   version: v1.12.0
+- src: mrlesmithjr.chrony
+  version: v0.1.0
 - src: mrlesmithjr.manage-lvm
   version: v0.2.2
 - src: mrlesmithjr.mdadm
