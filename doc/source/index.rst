@@ -43,6 +43,7 @@ Advanced Documentation
 .. toctree::
    :maxdepth: 2
 
+   multiple-environments
    control-plane-service-placement
    custom-ansible-playbooks
 
