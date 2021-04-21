@@ -51,3 +51,10 @@ kayobe_ansible_setup_filter: "{{ omit }}"
 # Gather subset to apply to the setup module when gathering facts. Default is
 # to not specify a gather subset.
 kayobe_ansible_setup_gather_subset: "{{ omit }}"
+
+###############################################################################
+# OS distribution.
+
+# OS distribution name. Valid options are "centos", "ubuntu". Default is
+# "centos".
+os_distribution: "centos"
