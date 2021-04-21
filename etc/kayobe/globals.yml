@@ -43,6 +43,13 @@
 #kayobe_ansible_user:
 
 ###############################################################################
+# OS distribution.
+
+# OS distribution name. Valid options are "centos", "ubuntu". Default is
+# "centos".
+#os_distribution:
+
+###############################################################################
 # Ansible configuration.
 
 # Filter to apply to the setup module when gathering facts. Default is to not

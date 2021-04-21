@@ -42,6 +42,13 @@ virtualenv_path: "{{ base_path ~ '/venvs' }}"
 kayobe_ansible_user: "stack"
 
 ###############################################################################
+# OS distribution.
+
+# OS distribution name. Valid options are "centos", "ubuntu". Default is
+# "centos".
+os_distribution: "centos"
+
+###############################################################################
 # Ansible configuration.
 
 # Filter to apply to the setup module when gathering facts. Default is to not
