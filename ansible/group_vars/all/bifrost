@@ -25,8 +25,8 @@ kolla_bifrost_firewalld_internal_zone: trusted
 # DIB base OS element. Default is {{ os_distribution }}.
 kolla_bifrost_dib_os_element: "{{ os_distribution }}"
 
-# DIB image OS release.
-kolla_bifrost_dib_os_release: "8-stream"
+# DIB image OS release. Default is {{ os_release }}.
+kolla_bifrost_dib_os_release: "{{ os_release }}"
 
 # List of default DIB elements.
 kolla_bifrost_dib_elements_default:

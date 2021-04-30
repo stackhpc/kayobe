@@ -48,6 +48,10 @@ kayobe_ansible_user: "stack"
 # "centos".
 os_distribution: "centos"
 
+# OS release. Valid options are "8-stream" when os_distribution is "centos", or
+# "focal" when os_distribution is "ubuntu".
+os_release: "8-stream"
+
 ###############################################################################
 # Ansible configuration.
 
