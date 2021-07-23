@@ -540,8 +540,22 @@ In case the variable requires a different name in Kolla Ansible, use
    kolla_overcloud_inventory_pass_through_host_vars_map_extra:
      my_kayobe_var: my_kolla_ansible_var
 
-Custom Group Variables
+.. _custom_kolla_inventory:
+
+Custom Kolla Inventory
 ----------------------
+
+When running kolla-ansible playbooks, kayobe will check for any customised
+inventories in the following locations:
+
+* ``${KAYOBE_CONFIG_PATH}/kolla/inventory/``
+* ``${KAYOBE_CONFIG_PATH}/environment/<environment>kolla/inventory/``
+    * Only used when using the :ref:`'multiple environments feature' <multiple-environments>`
+
+These are copied when kayobe generates the kolla ansible configuration. The
+copy is passed to ansible as an additional inventory when running any
+kolla-ansible playbooks. No templating or additional preprocessing is
+performed. For this reason, this directory must be a valid ansible inventory.
 
 Group variables can be used to set configuration for all hosts in a group. They
 can be set in Kolla Ansible by placing files in
