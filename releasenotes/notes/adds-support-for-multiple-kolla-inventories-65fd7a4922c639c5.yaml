@@ -1,0 +1,16 @@
+---
+features:
+  - |
+    Kolla inventories in the kayobe configuration are now passed through as is.
+    Previously, only ``group_vars`` were passed through. When using multiple
+    environments, the kolla inventory in from the base layer **and** the kolla
+    inventory from the environment layer will be passed through. The inventory
+    from the environment takes precedence over the inventory from the base
+    layer. This allows you to put any shared configuration in the base layer.
+upgrade:
+  - |
+    As kolla inventories are passed through as-is, the inventory directory in
+    kayobe config must be a valid Ansible inventory.
+  - |
+    It is no longer possible to create an environmnet named ``kayobe``. This
+    is reserved for internal use.
