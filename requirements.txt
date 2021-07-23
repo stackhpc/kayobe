@@ -10,3 +10,5 @@ oslo.config>=5.2.0 # Apache-2.0
 paramiko # LGPL
 wcmatch>=8.2,<=9.0 # MIT
 ansible-cached-lookup<=2.0.0 # MIT
+# NOTE(wszusmki): Remove this when min python>=3.9
+graphlib-backport<2.0.0 # PSF
