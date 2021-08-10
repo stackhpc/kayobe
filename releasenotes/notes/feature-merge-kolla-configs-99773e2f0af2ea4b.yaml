@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Adds new functionality to merge environment kolla configs with kolla config
+    in the base layer.
+upgrade:
+  - |
+    Environment specific Kolla config is now merged with kolla config in the base
+    layer. Set ``kolla_openstack_custom_config_environment_merging_enabled`` to
+    ``false`` to revert back to the previous behavior where only the config in
+    the environment was considered. Config options duplicated in the base layer
+    and the environment will need to be de-deduplicated to avoid the config
+    option showing up multiple times in the generated output.

@@ -16,6 +16,15 @@ provisioner:
     group_vars:
       all:
         kolla_extra_config_path: ${MOLECULE_TEMP_PATH:-/tmp}/molecule/kolla/config
+        kolla_openstack_custom_config_paths_extra:
+          - "{{ kolla_extra_config_path }}/../.."
+        kolla_openstack_custom_config_rules_extra:
+          - glob: aodh/dummy.yml
+            strategy: merge_yaml
+            priority: 2000
+          - glob: aodh/dummy.ini
+            strategy: merge_configs
+            priority: 2000
         kolla_enable_aodh: true
         kolla_extra_aodh: |
           [extra-aodh.conf]
