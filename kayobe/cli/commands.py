@@ -1137,6 +1137,7 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
     * Optionally, create a virtualenv for kolla-ansible.
     * Configure a user account for kolla-ansible.
     * Configure Docker engine.
+    * Configure libvirt.
     """
 
     def get_parser(self, prog_name):
@@ -1175,7 +1176,8 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Further kayobe playbooks.
         playbooks = _build_playbook_list(
-            "kolla-host", "docker", "swift-block-devices")
+            "kolla-host", "docker", "swift-block-devices",
+            "compute-libvirt-host")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud")
 
 

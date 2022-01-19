@@ -1308,6 +1308,93 @@ class TestCase(unittest.TestCase):
                     utils.get_data_files_path("ansible", "docker.yml"),
                     utils.get_data_files_path(
                         "ansible", "swift-block-devices.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "compute-libvirt-host.yml"),
+                ],
+                limit="overcloud",
+            ),
+        ]
+        self.assertEqual(expected_calls, mock_run.call_args_list)
+
+        expected_calls = [
+            mock.call(
+                mock.ANY,
+                "bootstrap-servers",
+            ),
+        ]
+        self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
+
+    @mock.patch.object(commands.KayobeAnsibleMixin,
+                       "run_kayobe_playbooks")
+    @mock.patch.object(commands.KollaAnsibleMixin,
+                       "run_kolla_ansible_overcloud")
+    def test_overcloud_host_configure_wipe_disks(self, mock_kolla_run,
+                                                 mock_run):
+        command = commands.OvercloudHostConfigure(TestApp(), [])
+        parser = command.get_parser("test")
+        parsed_args = parser.parse_args(["--wipe-disks"])
+
+        result = command.run(parsed_args)
+        self.assertEqual(0, result)
+
+        expected_calls = [
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "ip-allocation.yml")],
+                limit="overcloud",
+            ),
+            mock.call(
+                mock.ANY,
+                [
+                    utils.get_data_files_path("ansible", "ssh-known-host.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "kayobe-ansible-user.yml"),
+                    utils.get_data_files_path("ansible", "apt.yml"),
+                    utils.get_data_files_path("ansible", "dnf.yml"),
+                    utils.get_data_files_path("ansible", "pip.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "kayobe-target-venv.yml"),
+                    utils.get_data_files_path("ansible", "wipe-disks.yml"),
+                    utils.get_data_files_path("ansible", "users.yml"),
+                    utils.get_data_files_path("ansible", "dev-tools.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "disable-selinux.yml"),
+                    utils.get_data_files_path("ansible", "network.yml"),
+                    utils.get_data_files_path("ansible", "firewall.yml"),
+                    utils.get_data_files_path("ansible", "tuned.yml"),
+                    utils.get_data_files_path("ansible", "sysctl.yml"),
+                    utils.get_data_files_path("ansible", "disable-glean.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "disable-cloud-init.yml"),
+                    utils.get_data_files_path("ansible", "time.yml"),
+                    utils.get_data_files_path("ansible", "mdadm.yml"),
+                    utils.get_data_files_path("ansible", "luks.yml"),
+                    utils.get_data_files_path("ansible", "lvm.yml"),
+                    utils.get_data_files_path("ansible",
+                                              "docker-devicemapper.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "kolla-ansible-user.yml"),
+                    utils.get_data_files_path("ansible", "kolla-pip.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "kolla-target-venv.yml"),
+                ],
+                limit="overcloud",
+            ),
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
+                tags="config",
+                ignore_limit=True,
+            ),
+            mock.call(
+                mock.ANY,
+                [
+                    utils.get_data_files_path("ansible", "kolla-host.yml"),
+                    utils.get_data_files_path("ansible", "docker.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "swift-block-devices.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "compute-libvirt-host.yml"),
                 ],
                 limit="overcloud",
             ),
