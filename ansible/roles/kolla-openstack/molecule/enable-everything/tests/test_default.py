@@ -48,6 +48,7 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
      'murano',
      'neutron',
      'nova',
+     'nova/nova-libvirt',
      'octavia',
      'prometheus',
      'sahara',
@@ -94,7 +95,10 @@ def test_service_ini_file(host, path):
 @pytest.mark.parametrize(
     'path',
     ['ironic/ironic-agent.initramfs',
-     'ironic/ironic-agent.kernel'])
+     'ironic/ironic-agent.kernel',
+     'nova/nova-libvirt/cacert.pem',
+     'nova/nova-libvirt/clientcert.pem',
+     'nova/nova-libvirt/clientkey.pem'])
 def test_service_non_ini_file(host, path):
     # TODO(mgoddard): Check config file contents.
     path = os.path.join('/etc/kolla/config', path)
