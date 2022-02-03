@@ -1,5 +1,3 @@
-# {% raw %}{{ ansible_managed }}{% endraw %}
-
 {% if kolla_extra_mariadb %}
 #######################
 # Extra configuration
