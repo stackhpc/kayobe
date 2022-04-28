@@ -1,5 +1,9 @@
+# The order of packages is significant, because pip processes them in the order
+# of appearance. Changing the order has an impact on the overall integration
+# process, which may cause wedges in the gate later.
+
 pbr>=2.0 # Apache-2.0
-ansible>=2.8.0,<2.10.0,!=2.8.9,!=2.9.8,!=2.9.12 # GPLv3
+git+https://github.com/stackhpc/ansible@stackhpc/2.8/rocky-linux # GPL v3
 cliff>=3.1.0 # Apache
 netaddr!=0.7.16,>=0.7.13 # BSD
 PyYAML>=3.10.0 # MIT
