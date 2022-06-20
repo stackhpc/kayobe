@@ -69,8 +69,8 @@ supported:
 ``rules``
     List of IP routing rules.
 
-    On CentOS, each item should be a string describing an ``iproute2`` IP
-    routing rule.
+    On CentOS or Rocky, each item should be a string describing an ``iproute2``
+    IP routing rule.
 
     On Ubuntu, each item should be a dict containing optional items ``from``,
     ``to``, ``priority`` and ``table``. ``from`` is the source address prefix
@@ -83,6 +83,9 @@ supported:
 ``libvirt_network_name``
     A name to give to a Libvirt network representing this network on the seed
     hypervisor.
+``no_ip``
+    Whether to allocate an IP address for this network. If set to ``true``, an
+    IP address will not be allocated.
 
 Configuring an IP Subnet
 ------------------------
@@ -269,10 +272,10 @@ Configuring IP Routing Policy Rules
 
 IP routing policy rules may be configured by setting the ``rules`` attribute
 for a network to a list of rules. The format of each rule currently differs
-between CentOS and Ubuntu.
+between CentOS/Rocky and Ubuntu.
 
-CentOS
-""""""
+CentOS/Rocky
+""""""""""""
 
 The format of a rule is the string which would be appended to ``ip rule
 <add|del>`` to create or delete the rule.
@@ -355,6 +358,10 @@ The following attributes are supported:
     bridge.
 ``bond_mode``
     For bond interfaces, the bond's mode, e.g. 802.3ad.
+``bond_ad_select``
+    For bond interfaces, the 802.3ad aggregation selection logic to use. Valid
+    values are ``stable`` (default selection logic if not configured),
+    ``bandwidth`` or ``count``.
 ``bond_slaves``
     For bond interfaces, a list of names of network interfaces to act as slaves
     for the bond.

@@ -33,6 +33,6 @@ aio_bridge_ports:
   - dummy1
 
 # Build seed deployment images (IPA) with extra-hardware element
-ipa_build_images: true
+ipa_build_images: {{ build_images }}
 ipa_build_dib_elements_extra:
   - "extra-hardware"

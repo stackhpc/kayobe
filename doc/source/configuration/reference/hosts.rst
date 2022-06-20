@@ -79,8 +79,8 @@ is ``stack``.
 Typically, the image used to provision these hosts will not include this user
 account, so Kayobe performs a bootstrapping step to create it, as a different
 user. In cloud images, there is often a user named after the OS distro, e.g.
-``centos`` or ``ubuntu``. This user defaults to the ``os_distribution``
-variable, but may be set via the following variables:
+``centos``, ``rocky`` or ``ubuntu``. This user defaults to the
+``os_distribution`` variable, but may be set via the following variables:
 
 * ``seed_hypervisor_bootstrap_user``
 * ``seed_bootstrap_user``
@@ -211,8 +211,8 @@ DNF Package Repositories
 *tags:*
   | ``dnf``
 
-On CentOS, Kayobe supports configuration of package repositories via DNF, via
-variables in ``${KAYOBE_CONFIG_PATH}/dnf.yml``.
+On CentOS and Rocky, Kayobe supports configuration of package repositories via
+DNF, via variables in ``${KAYOBE_CONFIG_PATH}/dnf.yml``.
 
 Configuration of dnf.conf
 -------------------------
@@ -227,16 +227,23 @@ section of the file. For example, to configure DNF to use a proxy server:
    dnf_config:
      proxy: https://proxy.example.com
 
-CentOS and EPEL Mirrors
------------------------
+CentOS/Rocky and EPEL Mirrors
+-----------------------------
 
-CentOS and EPEL mirrors can be enabled by setting ``dnf_use_local_mirror`` to
-``true``.  CentOS repository mirrors are configured via the following
-variables:
+CentOS/Rocky and EPEL mirrors can be enabled by setting
+``dnf_use_local_mirror`` to ``true``. CentOS repository mirrors are configured
+via the following variables:
 
 * ``dnf_centos_mirror_host`` (default ``mirror.centos.org``) is the mirror
   hostname.
 * ``dnf_centos_mirror_directory`` (default ``centos``) is a directory on the
+  mirror in which repositories may be accessed.
+
+Rocky repository mirrors are configured via the following variables:
+
+* ``dnf_rocky_mirror_host`` (default ``dl.rockylinux.org``) is the mirror
+  hostname
+* ``dnf_rocky_mirror_directory`` (default ``pub/rocky``) is a directory on the
   mirror in which repositories may be accessed.
 
 EPEL repository mirrors are configured via the following variables:
@@ -302,8 +309,7 @@ oversight or testing.
 Apt
 ===
 
-On Ubuntu, Apt is used to manage packages and package repositories. Currently
-Kayobe does not provide support for configuring custom Apt repositories.
+On Ubuntu, Apt is used to manage packages and package repositories.
 
 Apt cache
 ---------
@@ -311,16 +317,130 @@ Apt cache
 The Apt cache timeout may be configured via ``apt_cache_valid_time`` (in
 seconds) in ``etc/kayobe/apt.yml``, and defaults to 3600.
 
+Apt proxy
+---------
+
 Apt can be configured to use a proxy via ``apt_proxy_http`` and
 ``apt_proxy_https`` in ``etc/kayobe/apt.yml``. These should be set to the full
 URL of the relevant proxy (e.g. ``http://squid.example.com:3128``).
+
+Apt configuration
+-----------------
+
+Arbitrary global configuration options for Apt may be defined via the
+``apt_config`` variable in ``etc/kayobe/apt.yml`` since the Yoga release. The
+format is a list, with each item mapping to a dict/map with the following
+items:
+
+* ``content``: free-form configuration file content
+* ``filename``: name of a file in ``/etc/apt/apt.conf.d/`` in which to write
+  the configuration
+
+The default of ``apt_config`` is an empty list.
+
+For example, the following configuration tells Apt to use 2 attempts when
+downloading packages:
+
+.. code-block:: yaml
+
+   apt_config:
+     - content: |
+         Acquire::Retries 1;
+       filename: 99retries
+
+Apt repositories
+----------------
+
+Kayobe supports configuration of custom Apt repositories via the
+``apt_repositories`` variable in ``etc/kayobe/apt.yml`` since the Yoga release.
+The format is a list, with each item mapping to a dict/map with the following
+items:
+
+* ``types``: whitespace-separated list of repository types, e.g. ``deb`` or
+  ``deb-src`` (optional, default is ``deb``)
+* ``url``: URL of the repository
+* ``suites``: whitespace-separated list of suites, e.g. ``focal`` (optional,
+  default is ``ansible_facts.distribution_release``)
+* ``components``: whitespace-separated list of components, e.g. ``main``
+  (optional, default is ``main``)
+* ``signed_by``: whitespace-separated list of names of GPG keyring files in
+  ``apt_keys_path`` (optional, default is unset)
+* ``architecture``: whitespace-separated list of architectures that will be used
+  (optional, default is unset)
+
+The default of ``apt_repositories`` is an empty list.
+
+For example, the following configuration defines a single Apt repository:
+
+.. code-block:: yaml
+   :caption: ``apt.yml``
+
+   apt_repositories:
+     - types: deb
+       url: https://example.com/repo
+       suites: focal
+       components: all
+
+In the following example, the Ubuntu Focal 20.04 repositories are consumed from
+a local package mirror. The ``apt_disable_sources_list`` variable is set to
+``true``, which disables all repositories in ``/etc/apt/sources.list``,
+including the default Ubuntu ones.
+
+.. code-block:: yaml
+   :caption: ``apt.yml``
+
+   apt_repositories:
+     - url: http://mirror.example.com/ubuntu/
+       suites: focal focal-updates
+       components: main restricted universe multiverse
+     - url: http://mirror.example.com/ubuntu/
+       suites: focal-security
+       components: main restricted universe multiverse
+
+   apt_disable_sources_list: true
+
+Apt keys
+--------
+
+Some repositories may be signed by a key that is not one of Apt's trusted keys.
+Kayobe avoids the use of the deprecated ``apt-key`` utility, and instead allows
+keys to be downloaded to a directory. This enables repositories to use the
+``SignedBy`` option to state that they are signed by a specific key. This
+approach is more secure than using globally trusted keys.
+
+Keys to be downloaded are defined by the ``apt_keys`` variable. The format is a
+list, with each item mapping to a dict/map with the following items:
+
+* ``url``: URL of key
+* ``filename``: Name of a file in which to store the downloaded key in
+  ``apt_keys_path``. The extension should be ``.asc`` for ASCII-armoured keys,
+  or ``.gpg`` otherwise.
+
+The default value of ``apt_keys`` is an empty list.
+
+In the following example, a key is downloaded, and a repository is configured
+that is signed by the key.
+
+.. code-block:: yaml
+   :caption: ``apt.yml``
+
+   apt_keys:
+     - url: https://example.com/GPG-key
+       filename: example-key.asc
+
+   apt_repositories:
+     - types: deb
+       url: https://example.com/repo
+       suites: focal
+       components: all
+       signed_by: example-key.asc
 
 SELinux
 =======
 *tags:*
   | ``disable-selinux``
 
-.. note:: SELinux applies to CentOS systems only.
+.. note:: SELinux applies to CentOS and Rocky systems only.
 
 SELinux is not supported by Kolla Ansible currently, so it is disabled by
 Kayobe. If necessary, Kayobe will reboot systems in order to apply a change to
@@ -341,12 +461,12 @@ Firewalld
 *tags:*
   | ``firewall``
 
-.. note:: Firewalld is supported on CentOS systems only. Currently no
+.. note:: Firewalld is supported on CentOS and Rocky systems only. Currently no
           firewall is supported on Ubuntu.
 
-Firewalld can be used to provide a firewall on CentOS systems. Since the Xena
-release, Kayobe provides support for enabling or disabling firewalld, as well
-as defining zones and rules.
+Firewalld can be used to provide a firewall on CentOS/Rocky systems. Since the
+Xena release, Kayobe provides support for enabling or disabling firewalld, as
+well as defining zones and rules.
 
 The following variables can be used to set whether to enable firewalld:
 
@@ -439,7 +559,7 @@ Tuned
 *tags:*
   | ``tuned``
 
-.. note:: Tuned configuration only supports CentOS systems for now.
+.. note:: Tuned configuration only supports CentOS/Rocky systems for now.
 
 Built-in ``tuned`` profiles can be applied to hosts. The following variables
 can be used to set a ``tuned`` profile to specific types of hosts:
@@ -836,11 +956,12 @@ For example:
 
    compute_lvm_groups_extra:
      - vgname: other-vg
-       disks: /dev/sdb
+       disks:
+         - /dev/sdb
        create: true
        lvnames:
          - lvname: other-vol
-           size: 100%
+           size: 100%FREE
            create: true
            mount: false
 
