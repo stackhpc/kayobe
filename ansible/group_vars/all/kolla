@@ -152,6 +152,8 @@ overcloud_container_image_regex_map:
     enabled: "{{ kolla_enable_gnocchi | bool }}"
   - regex: ^grafana
     enabled: "{{ kolla_enable_grafana | bool }}"
+  - regex: ^hacluster
+    enabled: "{{ kolla_enable_hacluster | bool }}"
   - regex: ^haproxy$
     enabled: "{{ kolla_enable_haproxy | bool }}"
   - regex: ^heat
@@ -199,7 +201,7 @@ overcloud_container_image_regex_map:
   - regex: neutron-server
     enabled: "{{ kolla_enable_neutron | bool }}"
   # Neutron SFC agent not currently supported on CentOS binary builds.
-  - regex: "neutron-\\(dhcp\\|l3\\|metadata\\|openvswitch\\)-agent"
+  - regex: "neutron-\\(dhcp\\|l3\\|metadata\\|linuxbridge\\|openvswitch\\)-agent"
     enabled: "{{ kolla_enable_neutron | bool }}"
   - regex: neutron-mlnx-agent
     enabled: "{{ kolla_enable_neutron_mlnx | bool }}"
@@ -540,6 +542,7 @@ kolla_enable_fluentd: "yes"
 kolla_enable_freezer: "no"
 kolla_enable_gnocchi: "no"
 kolla_enable_grafana: "{{ kolla_enable_monasca | bool }}"
+kolla_enable_hacluster: "no"
 kolla_enable_heat: "{{ kolla_enable_openstack_core | bool }}"
 kolla_enable_horizon: "{{ kolla_enable_openstack_core | bool }}"
 kolla_enable_influxdb: "{{ kolla_enable_monasca | bool or kolla_enable_cloudkitty | bool }}"
