@@ -332,6 +332,102 @@ Network Configuration
 Configuration of host networking is covered in depth in
 :ref:`configuration-network`.
 
+Firewalld
+=========
+*tags:*
+  | ``firewall``
+
+.. note:: Firewalld is supported on CentOS systems only. Currently no
+          firewall is supported on Ubuntu.
+
+Firewalld can be used to provide a firewall on CentOS systems. Since the Xena
+release, Kayobe provides support for enabling or disabling firewalld, as well
+as defining zones and rules.
+
+The following variables can be used to set whether to enable firewalld:
+
+* ``seed_hypervisor_firewalld_enabled``
+* ``seed_firewalld_enabled``
+* ``infra_vm_firewalld_enabled``
+* ``compute_firewalld_enabled``
+* ``controller_firewalld_enabled``
+* ``monitoring_firewalld_enabled``
+* ``storage_firewalld_enabled``
+
+When firewalld is enabled, the following variables can be used to configure a
+list of zones to create. Each item is a dict containing a ``zone`` item:
+
+* ``seed_hypervisor_firewalld_zones``
+* ``seed_firewalld_zones``
+* ``infra_vm_firewalld_zones``
+* ``compute_firewalld_zones``
+* ``controller_firewalld_zones``
+* ``monitoring_firewalld_zones``
+* ``storage_firewalld_zones``
+
+The following variables can be used to set a default zone. The default is
+unset, in which case the default zone will not be changed:
+
+* ``seed_hypervisor_firewalld_default_zone``
+* ``seed_firewalld_default_zone``
+* ``infra_vm_firewalld_default_zone``
+* ``compute_firewalld_default_zone``
+* ``controller_firewalld_default_zone``
+* ``monitoring_firewalld_default_zone``
+* ``storage_firewalld_default_zone``
+
+The following variables can be used to set a list of rules to apply. Each item
+is a dict containing arguments to pass to the ``firewalld`` module. Arguments
+are omitted if not provided, with the following exceptions: ``offline``
+(default ``true``), ``permanent`` (default ``true``), ``state`` (default
+``enabled``):
+
+* ``seed_hypervisor_firewalld_rules``
+* ``seed_firewalld_rules``
+* ``infra_vm_firewalld_rules``
+* ``compute_firewalld_rules``
+* ``controller_firewalld_rules``
+* ``monitoring_firewalld_rules``
+* ``storage_firewalld_rules``
+
+In the following example, firewalld is enabled on controllers. ``public`` and
+``internal`` zones are created, with their default rules disabled. TCP port
+8080 is open in the ``internal`` zone, and the ``http`` service is open in the
+``public`` zone:
+
+.. code-block:: yaml
+
+   controller_firewalld_enabled: true
+
+   controller_firewalld_zones:
+     - zone: public
+     - zone: internal
+
+   controller_firewalld_rules:
+     # Disable default rules in internal zone.
+     - service: dhcpv6-client
+       state: disabled
+       zone: internal
+     - service: samba-client
+       state: disabled
+       zone: internal
+     - service: ssh
+       state: disabled
+       zone: internal
+     # Disable default rules in public zone.
+     - service: dhcpv6-client
+       state: disabled
+       zone: public
+     - service: ssh
+       state: disabled
+       zone: public
+     # Enable TCP port 8080 in internal zone.
+     - port: 8080/tcp
+       zone: internal
+     # Enable the HTTP service in the public zone.
+     - service: http
+       zone: public
+
 Sysctls
 =======
 *tags:*
@@ -754,3 +850,178 @@ Ansible's containers do), but may be necessary when building images.
 Docker's live restore feature can be configured via
 ``docker_daemon_live_restore``, although it is disabled by default due to
 issues observed.
+
+Compute libvirt daemon
+======================
+*tags:*
+  | ``libvirt-host``
+
+.. note::
+
+   This section is about the libvirt daemon on compute nodes, as opposed to the
+   seed hypervisor.
+
+Since Yoga, Kayobe provides support for deploying and configuring a libvirt
+host daemon, as an alternative to the ``nova_libvirt`` container support by
+Kolla Ansible. The host daemon is not used by default, but it is possible to
+enable it by setting ``kolla_enable_nova_libvirt_container`` to ``false`` in
+``$KAYOBE_CONFIG_PATH/kolla.yml``.
+
+Migration of hosts from a containerised libvirt to host libvirt is currently
+not supported.
+
+The following options are available in ``$KAYOBE_CONFIG_PATH/compute.yml`` and
+are relevant only when using the libvirt daemon rather than the
+``nova_libvirt`` container:
+
+``compute_libvirt_enabled``
+    Whether to enable a host libvirt daemon. Default is true if
+    ``kolla_enable_nova`` is ``true`` and
+    ``kolla_enable_nova_libvirt_container`` is ``false``.
+``compute_libvirt_conf_default``
+    A dict of default configuration options to write to
+    ``/etc/libvirt/libvirtd.conf``.
+``compute_libvirt_conf_extra``
+    A dict of additional configuration options to write to
+    ``/etc/libvirt/libvirtd.conf``.
+``compute_libvirt_conf``
+    A dict of configuration options to write to ``/etc/libvirt/libvirtd.conf``.
+    Default is a combination of ``compute_libvirt_conf_default`` and
+    ``compute_libvirt_conf_extra``.
+``compute_libvirtd_log_level``
+    Numerical log level for libvirtd. Default is 3.
+``compute_qemu_conf_default``
+    A dict of default configuration options to write to
+    ``/etc/libvirt/qemu.conf``.
+``compute_qemu_conf_extra``
+    A dict of additional configuration options to write to
+    ``/etc/libvirt/qemu.conf``.
+``compute_qemu_conf``
+    A dict of configuration options to write to ``/etc/libvirt/qemu.conf``.
+    Default is a combination of ``compute_qemu_conf_default`` and
+    ``compute_qemu_conf_extra``.
+``compute_libvirt_enable_sasl``
+    Whether to enable libvirt SASL authentication.  Default is the same as
+    ``compute_libvirt_tcp_listen``.
+``compute_libvirt_sasl_password``
+    libvirt SASL password. Default is unset. This must be defined when
+    ``compute_libvirt_enable_sasl`` is ``true``.
+``compute_libvirt_enable_tls``
+    Whether to enable a libvirt TLS listener. Default is false.
+``compute_libvirt_ceph_repo_install``
+    Whether to install a Ceph package repository on CentOS and Rocky hosts.
+    Default is ``true``.
+``compute_libvirt_ceph_repo_release``
+    Ceph package repository release to install on CentOS and Rocky hosts when
+    ``compute_libvirt_ceph_repo_install`` is ``true``. Default is ``pacific``.
+
+Example: custom libvirtd.conf
+-----------------------------
+
+To customise the libvirt daemon log output to send level 3 to the journal:
+
+.. code-block:: yaml
+   :caption: ``compute.yml``
+
+   compute_libvirt_conf_extra:
+     log_outputs: "3:journald"
+
+Example: custom qemu.conf
+-------------------------
+
+To customise QEMU to avoid adding timestamps to logs:
+
+.. code-block:: yaml
+   :caption: ``compute.yml``
+
+   compute_qemu_conf_extra:
+     log_timestamp: 0
+
+Example: SASL
+-------------
+
+SASL authentication is enabled by default.  This provides authentication for
+TCP and TLS connections to the libvirt API. A password is required, and should
+be encrypted using Ansible Vault.
+
+.. code-block:: yaml
+   :caption: ``compute.yml``
+
+   compute_libvirt_sasl_password: !vault |
+     $ANSIBLE_VAULT;1.1;AES256
+     63363937303539373738356236393563636466313130633435353933613637343231303836343933
+     3463623265653030323665383337376462363434396361320a653737376237353261303066616637
+     66613562316533313632613433643537346463303363376664396661343835373033326261383065
+     3731643633656636360a623534313665343066656161333866613338313266613465336332376463
+     3234
+
+Example: enabling libvirt TLS listener
+--------------------------------------
+
+To enable the libvirt TLS listener:
+
+.. code-block:: yaml
+   :caption: ``compute.yml``
+
+   compute_libvirt_enable_tls: true
+
+When the TLS listener is enabled, it is necessary to provide client, server and
+CA certificates. The following files should be provided:
+
+``cacert.pem``
+    CA certificate used to sign client and server certificates.
+``clientcert.pem``
+    Client certificate.
+``clientkey.pem``
+    Client key.
+``servercert.pem``
+    Server certificate.
+``serverkey.pem``
+    Server key.
+
+It is recommended to encrypt the key files using Ansible Vault.
+
+The following paths are searched for these files:
+
+* ``$KAYOBE_CONFIG_PATH/certificates/libvirt/{{ inventory_hostname }}/``
+* ``$KAYOBE_CONFIG_PATH/certificates/libvirt/``
+
+In this way, certificates may be generated for each host, or shared using
+wildcard certificates.
+
+If using Kayobe environments, certificates in the environment take precedence.
+
+Kayobe makes the CA certificate and client certificate and key available to
+Kolla Ansible, for use by the ``nova_compute`` service.
+
+Example: disabling Ceph repository installation
+-----------------------------------------------
+
+On CentOS and Rocky hosts, a CentOS Storage SIG Ceph repository is installed
+that provides more recent Ceph libraries than those available in CentOS/Rocky
+AppStream.  This may be necessary when using Ceph for Cinder volumes or Nova
+ephemeral block devices. In some cases, such as when using local package
+mirrors, the upstream repository may not be appropriate. The installation of
+the repository may be disabled as follows:
+
+.. code-block:: yaml
+   :caption: ``compute.yml``
+
+   compute_libvirt_ceph_repo_install: false
+
+Example: installing additional packages
+---------------------------------------
+
+In some cases it may be useful to install additional packages on compute hosts
+for use by libvirt. The `stackhpc.libvirt-host
+<https://galaxy.ansible.com/stackhpc/libvirt-host>`__ Ansible role supports
+this via the ``libvirt_host_extra_daemon_packages`` variable. The variable
+should be defined via group variables in the Ansible inventory, to avoid
+applying the change to the seed hypervisor. For example, to install the
+``trousers`` package used for accessing TPM hardware:
+
+.. code-block:: yaml
+   :caption: ``inventory/group_vars/compute/libvirt``
+
+   libvirt_host_extra_daemon_packages:
+     - trousers
