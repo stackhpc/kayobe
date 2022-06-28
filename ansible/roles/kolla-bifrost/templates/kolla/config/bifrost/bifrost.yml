@@ -52,14 +52,8 @@ ipa_kernel_upstream_checksum_url: "{{ kolla_bifrost_ipa_kernel_checksum_url }}"
 # break existing nodes if the IPA kernel is updated e.g. following an upgrade.
 # Use the old value of .vmlinuz here.
 # TODO(mgoddard): Remove these when we use IPA builder.
-{# Using double jinja escaping here since this will be templated by kayobe #}
-{# and kolla ansible, then interpreted as Ansible variables by Bifrost. #}
-{{ '{% raw %}' }}
-{% raw %}
-ipa_kernel: "{{http_boot_folder}}/ipa.vmlinuz"
-ipa_kernel_url: "{{ ipa_file_protocol }}://{{ hostvars[inventory_hostname]['ansible_' + ans_network_interface]['ipv4']['address'] }}:{{file_url_port}}/ipa.vmlinuz"
-{% endraw %}
-{{ '{% endraw %}' }}
+ipa_kernel: "{{ '{% raw %}' }}{% raw %}{{http_boot_folder}}/ipa.vmlinuz{% endraw %}{{ '{% endraw %}' }}"
+ipa_kernel_url: "{{ '{% raw %}' }}{% raw %}{{ ipa_file_protocol }}://{{ hostvars[inventory_hostname]['ansible_' + ans_network_interface]['ipv4']['address'] }}:{{file_url_port}}/ipa.vmlinuz{% endraw %}{{ '{% endraw %}' }}"
 
 # Algorithm of checksum of Ironic Python Agent (IPA) kernel image.
 ipa_kernel_upstream_checksum_algo: "{{ kolla_bifrost_ipa_kernel_checksum_algorithm }}"
