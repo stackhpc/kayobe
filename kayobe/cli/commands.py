@@ -409,6 +409,7 @@ class SeedHypervisorHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
     * Allocate IP addresses for all configured networks.
     * Add the host to SSH known hosts.
     * Configure a user account for use by kayobe for SSH access.
+    * Configure proxy settings.
     * Configure package repos.
     * Configure a PyPI mirror.
     * Optionally, create a virtualenv for remote target hosts.
@@ -442,7 +443,7 @@ class SeedHypervisorHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
                                   limit="seed-hypervisor")
 
         playbooks = _build_playbook_list(
-            "ssh-known-host", "kayobe-ansible-user",
+            "ssh-known-host", "kayobe-ansible-user", "proxy",
             "apt", "dnf", "pip", "kayobe-target-venv")
         if parsed_args.wipe_disks:
             playbooks += _build_playbook_list("wipe-disks")
@@ -559,6 +560,7 @@ class SeedHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
     * Allocate IP addresses for all configured networks.
     * Add the host to SSH known hosts.
     * Configure a user account for use by kayobe for SSH access.
+    * Configure proxy settings.
     * Configure package repos.
     * Configure a PyPI mirror.
     * Optionally, create a virtualenv for remote target hosts.
@@ -599,7 +601,7 @@ class SeedHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Run kayobe playbooks.
         playbooks = _build_playbook_list(
-            "ssh-known-host", "kayobe-ansible-user",
+            "ssh-known-host", "kayobe-ansible-user", "proxy",
             "apt", "dnf", "pip", "kayobe-target-venv")
         if parsed_args.wipe_disks:
             playbooks += _build_playbook_list("wipe-disks")
@@ -870,6 +872,7 @@ class InfraVMHostConfigure(KayobeAnsibleMixin, VaultMixin,
     * Allocate IP addresses for all configured networks.
     * Add the host to SSH known hosts.
     * Configure a user account for use by kayobe for SSH access.
+    * Configure proxy settings.
     * Configure package repos.
     * Configure a PyPI mirror.
     * Optionally, create a virtualenv for remote target hosts.
@@ -905,7 +908,7 @@ class InfraVMHostConfigure(KayobeAnsibleMixin, VaultMixin,
 
         # Kayobe playbooks.
         playbooks = _build_playbook_list(
-            "ssh-known-host", "kayobe-ansible-user",
+            "ssh-known-host", "kayobe-ansible-user", "proxy",
             "apt", "dnf", "pip", "kayobe-target-venv")
         if parsed_args.wipe_disks:
             playbooks += _build_playbook_list("wipe-disks")
@@ -1119,6 +1122,7 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
     * Allocate IP addresses for all configured networks.
     * Add the host to SSH known hosts.
     * Configure a user account for use by kayobe for SSH access.
+    * Configure proxy settings.
     * Configure package repos.
     * Configure a PyPI mirror.
     * Optionally, create a virtualenv for remote target hosts.
@@ -1137,6 +1141,7 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
     * Optionally, create a virtualenv for kolla-ansible.
     * Configure a user account for kolla-ansible.
     * Configure Docker engine.
+    * Configure libvirt.
     """
 
     def get_parser(self, prog_name):
@@ -1157,7 +1162,7 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Kayobe playbooks.
         playbooks = _build_playbook_list(
-            "ssh-known-host", "kayobe-ansible-user",
+            "ssh-known-host", "kayobe-ansible-user", "proxy",
             "apt", "dnf", "pip", "kayobe-target-venv")
         if parsed_args.wipe_disks:
             playbooks += _build_playbook_list("wipe-disks")
@@ -1175,7 +1180,8 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Further kayobe playbooks.
         playbooks = _build_playbook_list(
-            "kolla-host", "docker", "swift-block-devices")
+            "kolla-host", "docker", "swift-block-devices",
+            "compute-libvirt-host")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud")
 
 
@@ -1767,6 +1773,31 @@ class OvercloudDeploymentImageBuild(KayobeAnsibleMixin, VaultMixin, Command):
         extra_vars = {}
         if parsed_args.force_rebuild:
             extra_vars["ipa_image_force_rebuild"] = True
+        self.run_kayobe_playbooks(parsed_args, playbooks,
+                                  extra_vars=extra_vars)
+
+
+class OvercloudHostImageBuild(KayobeAnsibleMixin, VaultMixin, Command):
+    """Build overcloud host disk images.
+
+    Builds host disk images using Diskimage Builder (DIB) for use when
+    provisioning the overcloud hosts.
+    """
+
+    def get_parser(self, prog_name):
+        parser = super(OvercloudHostImageBuild, self).get_parser(
+            prog_name)
+        group = parser.add_argument_group("Host Image Build")
+        group.add_argument("--force-rebuild", action="store_true",
+                           help="whether to force rebuilding the images")
+        return parser
+
+    def take_action(self, parsed_args):
+        self.app.LOG.debug("Building overcloud host disk images")
+        playbooks = _build_playbook_list("overcloud-host-image-build")
+        extra_vars = {}
+        if parsed_args.force_rebuild:
+            extra_vars["overcloud_host_image_force_rebuild"] = True
         self.run_kayobe_playbooks(parsed_args, playbooks,
                                   extra_vars=extra_vars)
 
