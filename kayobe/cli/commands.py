@@ -726,6 +726,7 @@ class SeedServiceDeploy(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         self.run_kolla_ansible_seed(parsed_args, "deploy-bifrost")
         playbooks = _build_playbook_list(
+            "seed-credentials",
             "seed-introspection-rules",
             "dell-switch-bmp")
         self.run_kayobe_playbooks(parsed_args, playbooks)
@@ -760,6 +761,7 @@ class SeedServiceUpgrade(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
         self.run_kayobe_playbooks(parsed_args, playbooks)
         self.run_kolla_ansible_seed(parsed_args, "upgrade-bifrost")
         playbooks = _build_playbook_list(
+            "seed-credentials",
             "seed-introspection-rules",
             "dell-switch-bmp")
         self.run_kayobe_playbooks(parsed_args, playbooks)
