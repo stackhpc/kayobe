@@ -985,6 +985,7 @@ class TestCase(unittest.TestCase):
                     utils.get_data_files_path(
                         "ansible", "kayobe-ansible-user.yml"),
                     utils.get_data_files_path("ansible", "proxy.yml"),
+                    utils.get_data_files_path("ansible", "apt.yml"),
                     utils.get_data_files_path("ansible", "dnf.yml"),
                     utils.get_data_files_path("ansible", "pip.yml"),
                     utils.get_data_files_path(
