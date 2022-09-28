@@ -102,6 +102,7 @@
     - role: ipa-images
       os_openstacksdk_install_epel: "{{ dnf_install_epel }}"
       os_openstacksdk_state: latest
+      ipa_images_headers: "{{ ipa_headers }}"
       ipa_images_venv: "{{ virtualenv_path }}/openstacksdk"
       ipa_images_upper_constraints_file: "{{ pip_upper_constraints_file }}"
       ipa_images_openstack_auth_type: "{{ openstack_auth_type }}"

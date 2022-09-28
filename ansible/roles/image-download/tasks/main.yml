@@ -28,6 +28,7 @@
         checksum: "{{ checksum if expected_checksum is not skipped else omit }}"
         # Always download the image if we have no checksum to compare with.
         force: "{{ expected_checksum is skipped }}"
+        headers: "{{ image_download_headers | default(omit, true) }}"
         backup: true
   when:
     - image_download_url is not none

@@ -13,6 +13,7 @@
     image_download_checksum_url: "{{ item.checksum_url }}"
     image_download_checksum_algorithm: "{{ item.checksum_algorithm }}"
     image_download_dest: "{{ item.dest }}"
+    image_download_headers: "{{ ipa_images_headers }}"
   include_role:
     name: image-download
   with_items:

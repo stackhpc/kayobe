@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Adds variables to configure HTTP headers when downloading IPA.

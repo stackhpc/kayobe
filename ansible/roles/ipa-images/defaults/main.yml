@@ -59,3 +59,6 @@ ipa_images_compute_node_limit: baremetal-compute
 # Whether or not to update the deploy_ramdisk and deploy_kernel Ironic node
 # properties
 ipa_images_update_ironic_nodes: False
+
+# Headers to use when downloading Ironic Python Agent (IPA) images.
+ipa_images_headers:

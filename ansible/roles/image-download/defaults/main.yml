@@ -17,3 +17,6 @@ image_download_path:
 
 # Path to the image's destination.
 image_download_dest:
+
+# Headers to use when downloading images.
+image_download_headers:

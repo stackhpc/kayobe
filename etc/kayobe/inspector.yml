@@ -23,6 +23,9 @@
 # Algorithm of checksum of Ironic Python Agent (IPA) ramdisk image.
 #inspector_ipa_ramdisk_checksum_algorithm:
 
+# Headers to use when downloading Ironic Python Agent (IPA) images.
+#inspector_ipa_headers:
+
 ###############################################################################
 # Ironic inspector processing configuration.
 

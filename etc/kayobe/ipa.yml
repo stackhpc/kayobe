@@ -99,6 +99,9 @@
 # Algorithm of checksum of Ironic deployment ramdisk image.
 #ipa_ramdisk_checksum_algorithm:
 
+# Headers to use when downloading Ironic Python Agent (IPA) images.
+#ipa_headers:
+
 ###############################################################################
 # Ironic Python Agent (IPA) deployment configuration.
 
