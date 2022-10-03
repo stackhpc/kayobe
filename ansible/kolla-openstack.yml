@@ -92,6 +92,7 @@
     - kolla-openstack
   vars:
     switch_type_to_device_type:
+      dellos10: netmiko_dell_os10
       dellos9: netmiko_dell_force10
       dell-powerconnect: netmiko_dell_powerconnect
       junos: netmiko_juniper
