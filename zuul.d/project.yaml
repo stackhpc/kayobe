@@ -1,5 +1,6 @@
 ---
 - project:
+    queue: kayobe
     templates:
       - openstack-cover-jobs
       - openstack-python3-victoria-jobs
@@ -10,24 +11,20 @@
         - kayobe-tox-ansible-syntax
         - kayobe-tox-ansible
         - kayobe-tox-molecule
-        - kayobe-overcloud-centos8
-        - kayobe-overcloud-tls-centos8
-        - kayobe-overcloud-host-configure-centos8
-        - kayobe-overcloud-upgrade-centos8
-        - kayobe-seed-centos8
-        - kayobe-seed-upgrade-centos8
-        - kayobe-seed-vm-centos8
-
+        - kayobe-overcloud-centos8s
+        - kayobe-overcloud-tls-centos8s
+        - kayobe-overcloud-host-configure-centos8s
+        - kayobe-overcloud-upgrade-centos8s
+        - kayobe-seed-centos8s
+        - kayobe-seed-upgrade-centos8s
+        - kayobe-seed-vm-centos8s
     gate:
-      queue: kayobe
       jobs:
         - kayobe-tox-ansible-syntax
         - kayobe-tox-ansible
         - kayobe-tox-molecule
-        - kayobe-overcloud-centos8
-        - kayobe-overcloud-tls-centos8
-        - kayobe-overcloud-host-configure-centos8
-        - kayobe-overcloud-upgrade-centos8
-        - kayobe-seed-centos8
-        - kayobe-seed-upgrade-centos8
-        - kayobe-seed-vm-centos8
+        - kayobe-overcloud-centos8s
+        - kayobe-overcloud-tls-centos8s
+        - kayobe-overcloud-host-configure-centos8s
+        - kayobe-seed-centos8s
+        - kayobe-seed-vm-centos8s

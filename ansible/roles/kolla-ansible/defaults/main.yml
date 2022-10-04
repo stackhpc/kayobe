@@ -13,7 +13,7 @@ kolla_ansible_source_url:
 kolla_ansible_source_version:
 
 # Virtualenv directory where Kolla-ansible will be installed.
-kolla_ansible_venv: "{{ ansible_env['PWD'] }}/kolla-venv"
+kolla_ansible_venv: "{{ ansible_facts.env['PWD'] }}/kolla-venv"
 
 # Python interpreter to use to create Kolla Ansible virtualenv.
 kolla_ansible_venv_python: python3
@@ -164,6 +164,9 @@ kolla_inspector_dhcp_pool_start:
 
 # End of range of IP addresses for dnsmasq to allocate from.
 kolla_inspector_dhcp_pool_end:
+
+# The inspection network netmask.
+kolla_inspector_netmask:
 
 # Default gateway to use for inspection network.
 kolla_inspector_default_gateway:

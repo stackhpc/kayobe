@@ -54,7 +54,7 @@ configuration drive built by Bifrost, rather than the Bifrost default of
 ``kolla_bifrost_dib_os_element``
     DIB base OS element. Default is ``centos``.
 ``kolla_bifrost_dib_os_release``
-    DIB image OS release. Default is ``8``.
+    DIB image OS release. Default is ``8-stream``.
 ``kolla_bifrost_dib_elements_default``
     *Added in the Train release. Use kolla_bifrost_dib_elements in earlier
     releases.*
@@ -78,8 +78,7 @@ configuration drive built by Bifrost, rather than the Bifrost default of
     releases.*
 
     DIB default environment variables. Default is
-    ``{"DIB_CLOUD_INIT_DATASOURCES": "ConfigDrive",
-    "DIB_DISABLE_KERNEL_CLEANUP": 1}``.
+    ``{"DIB_CLOUD_INIT_DATASOURCES": "ConfigDrive"}``.
 ``kolla_bifrost_dib_env_vars_extra``
     *Added in the Train release. Use kolla_bifrost_dib_env_vars in earlier
     releases.*
@@ -173,7 +172,7 @@ Rather than needing to write a custom DIB element, we can use the
 ``biosdevname`` package:
 
 .. code-block:: yaml
-   :caption: ``ipa.yml``
+   :caption: ``bifrost.yml``
 
    kolla_bifrost_dib_packages:
      - "biosdevname"
@@ -209,7 +208,9 @@ The following options configure the Ironic Inspector service in the
 ``kolla_bifrost_inspector_extra_kernel_options``
     List of extra kernel parameters for the inspector default PXE
     configuration. Default is ``{{ inspector_extra_kernel_options }}``, defined
-    in ``${KAYOBE_CONFIG_PATH}/inspector.yml``.
+    in ``${KAYOBE_CONFIG_PATH}/inspector.yml``. When customising this variable,
+    the default extra kernel parameters should be kept to retain full node
+    inspection capabilities.
 ``kolla_bifrost_inspector_rules``
     List of introspection rules for Bifrost's Ironic Inspector service. Default
     is ``{{ inspector_rules }}``, defined in

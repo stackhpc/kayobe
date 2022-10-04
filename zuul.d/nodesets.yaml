@@ -1,6 +1,6 @@
 ---
 - nodeset:
-    name: kayobe-centos8
+    name: kayobe-centos8s
     nodes:
       - name: primary
-        label: centos-8
+        label: centos-8-stream

@@ -16,8 +16,8 @@
 # URL of IPA builder source repository.
 #ipa_builder_source_url:
 
-# Version of IPA builder source repository. Default is master.
-#ipa_build_source_version:
+# Version of IPA builder source repository. Default is stable/wallaby.
+#ipa_builder_source_version:
 
 # List of default Diskimage Builder (DIB) elements to use when building IPA
 # images. Default is ["centos", "enable-serial-console",
@@ -62,7 +62,8 @@
 #ipa_build_dib_packages:
 
 # Upper constraints file for installing packages in the virtual environment
-# used for building IPA images. Default is {{ pip_upper_constraints_file }}.
+# used for building IPA images. To build CentOS Stream 8 images, default is
+# "https://releases.openstack.org/constraints/upper/wallaby".
 #ipa_build_upper_constraints_file:
 
 ###############################################################################
