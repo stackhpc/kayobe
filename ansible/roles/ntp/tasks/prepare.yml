@@ -11,6 +11,7 @@
     masked: true
     state: "{{ 'stopped' if service_exists else omit }}"
   become: true
+  when: service_exists
   with_items: "{{ ntp_service_disable_list }}"
 
 - name: Remove kolla-ansible installed chrony container
