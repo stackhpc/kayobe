@@ -4,7 +4,7 @@
 
 - name: Mask alternative NTP clients to prevent conflicts
   vars:
-    service_exists: "{{ item in ansible_facts.services }}"
+    service_exists: "{{ item in ansible_facts.services and ansible_facts.services[item].status != 'not-found' }}"
   systemd:
     name: "{{ item }}"
     enabled: "{{ 'false' if service_exists else omit }}"
