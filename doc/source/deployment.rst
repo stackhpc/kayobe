@@ -172,13 +172,13 @@ At this point the seed services need to be deployed on the seed VM.  These
 services are deployed in the ``bifrost_deploy`` container.
 
 This command will also build the Operating System image that will be used to
-deploy the overcloud nodes using Disk Image Builder (DIB).
+deploy the overcloud nodes using Disk Image Builder (DIB), unless
+``overcloud_dib_build_host_images`` is set to ``True``.
 
 .. note::
 
    If you are using Rocky Linux - building of the Operating System image
-   needs to be done outside of Kayobe (no support for diskimage-builder
-   containerfile element based builds in bifrost container).
+   needs to be done using ``kayobe overcloud host image build``.
 
 To deploy the seed services in containers::
 
@@ -222,6 +222,28 @@ rebuilding images, use the ``--force-rebuild`` argument.
 
    See :ref:`here <configuration-ipa-build>` for information on how to
    configure the IPA image build process.
+
+Building Overcloud Host Disk Images
+-----------------------------------
+
+.. note::
+
+   This step is only relevant if ``overcloud_dib_build_host_images`` is set to
+   ``True``. By default, a host disk image is automatically built by Bifrost
+   unless you're running Rocky Linux - which requires this step.
+
+Host disk images are deployed on overcloud hosts during provisioning. To build
+host disk images::
+
+    (kayobe) $ kayobe overcloud host image build
+
+If images have been built previously, they will not be rebuilt. To force
+rebuilding images, use the ``--force-rebuild`` argument.
+
+.. seealso::
+
+   See :ref:`here <overcloud-dib>` for information on how to configure the
+   overcloud host disk image build process.
 
 Accessing the Seed via SSH (Optional)
 -------------------------------------
