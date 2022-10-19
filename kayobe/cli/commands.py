@@ -905,7 +905,7 @@ class InfraVMHostConfigure(KayobeAnsibleMixin, VaultMixin,
         # Kayobe playbooks.
         playbooks = _build_playbook_list(
             "ssh-known-host", "kayobe-ansible-user", "proxy",
-            "dnf", "pip", "kayobe-target-venv")
+            "apt", "dnf", "pip", "kayobe-target-venv")
         if parsed_args.wipe_disks:
             playbooks += _build_playbook_list("wipe-disks")
         playbooks += _build_playbook_list(
@@ -1003,7 +1003,8 @@ class OvercloudInventoryDiscover(KayobeAnsibleMixin, VaultMixin, Command):
                                      "overcloud-inventory-discover"))
         # If necessary, allocate IP addresses for the discovered hosts.
         self.run_kayobe_playbook(parsed_args,
-                                 _get_playbook_path("ip-allocation"))
+                                 _get_playbook_path("ip-allocation"),
+                                 limit="overcloud")
         # Now populate the Kolla Ansible inventory.
         self.generate_kolla_ansible_config(parsed_args, service_config=False)
 
