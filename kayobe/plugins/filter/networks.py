@@ -141,25 +141,25 @@ def get_vlan_parent(device, vlan):
     return re.sub(r'\.{}$'.format(vlan), '', device)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_attr(context, name, attr, inventory_hostname=None):
     var_name = "%s_%s" % (name, attr)
     return utils.get_hostvar(context, var_name, inventory_hostname)
 
 
 def _make_attr_filter(attr):
-    @jinja2.contextfilter
+    @jinja2.pass_context
     def func(context, name, inventory_hostname=None):
         return net_attr(context, name, attr, inventory_hostname)
     return func
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_vip_address(context, name, inventory_hostname=None):
     return net_attr(context, name, 'vip_address', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_ip(context, name, inventory_hostname=None):
     ips = net_attr(context, name, 'ips', inventory_hostname)
     if ips:
@@ -169,51 +169,56 @@ def net_ip(context, name, inventory_hostname=None):
         return ips.get(inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_interface(context, name, inventory_hostname=None):
     return net_attr(context, name, 'interface', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
+def net_no_ip(context, name, inventory_hostname=None):
+    return net_attr(context, name, 'no_ip', inventory_hostname)
+
+
+@jinja2.pass_context
 def net_cidr(context, name, inventory_hostname=None):
     return net_attr(context, name, 'cidr', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_mask(context, name, inventory_hostname=None):
     cidr = net_cidr(context, name, inventory_hostname)
     return str(netaddr.IPNetwork(cidr).netmask) if cidr is not None else None
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_prefix(context, name, inventory_hostname=None):
     cidr = net_cidr(context, name, inventory_hostname)
     return str(netaddr.IPNetwork(cidr).prefixlen) if cidr is not None else None
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_gateway(context, name, inventory_hostname=None):
     return net_attr(context, name, 'gateway', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_allocation_pool_start(context, name, inventory_hostname=None):
     return net_attr(context, name, 'allocation_pool_start', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_allocation_pool_end(context, name, inventory_hostname=None):
     return net_attr(context, name, 'allocation_pool_end', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_inspection_allocation_pool_start(context, name,
                                          inventory_hostname=None):
     return net_attr(context, name, 'inspection_allocation_pool_start',
                     inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_inspection_allocation_pool_end(context, name, inventory_hostname=None):
     return net_attr(context, name, 'inspection_allocation_pool_end',
                     inventory_hostname)
@@ -222,13 +227,13 @@ def net_inspection_allocation_pool_end(context, name, inventory_hostname=None):
 net_inspection_gateway = _make_attr_filter('inspection_gateway')
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_neutron_allocation_pool_start(context, name, inventory_hostname=None):
     return net_attr(context, name, 'neutron_allocation_pool_start',
                     inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_neutron_allocation_pool_end(context, name, inventory_hostname=None):
     return net_attr(context, name, 'neutron_allocation_pool_end',
                     inventory_hostname)
@@ -237,12 +242,12 @@ def net_neutron_allocation_pool_end(context, name, inventory_hostname=None):
 net_neutron_gateway = _make_attr_filter('neutron_gateway')
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_vlan(context, name, inventory_hostname=None):
     return net_attr(context, name, 'vlan', inventory_hostname)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_mtu(context, name, inventory_hostname=None):
     mtu = net_attr(context, name, 'mtu', inventory_hostname)
     if mtu is not None:
@@ -259,7 +264,7 @@ net_ethtool_opts = _make_attr_filter('ethtool_opts')
 net_zone = _make_attr_filter('zone')
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_libvirt_network_name(context, name, inventory_hostname=None):
     """Return the configured Libvirt name for a network.
 
@@ -270,12 +275,13 @@ def net_libvirt_network_name(context, name, inventory_hostname=None):
     return libvirt_name or name
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_bridge_ports(context, name, inventory_hostname=None):
     return net_attr(context, name, 'bridge_ports', inventory_hostname)
 
 
 net_bond_mode = _make_attr_filter('bond_mode')
+net_bond_ad_select = _make_attr_filter('bond_ad_select')
 net_bond_slaves = _make_attr_filter('bond_slaves')
 net_bond_miimon = _make_attr_filter('bond_miimon')
 net_bond_updelay = _make_attr_filter('bond_updelay')
@@ -320,7 +326,7 @@ def _validate_rules(rules):
                 "for CentOS")
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_interface_obj(context, name, inventory_hostname=None):
     """Return a dict representation of a network interface.
 
@@ -372,7 +378,7 @@ def net_interface_obj(context, name, inventory_hostname=None):
     return interface
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_bridge_obj(context, name, inventory_hostname=None):
     """Return a dict representation of a network bridge interface.
 
@@ -426,7 +432,7 @@ def net_bridge_obj(context, name, inventory_hostname=None):
     return interface
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_bond_obj(context, name, inventory_hostname=None):
     """Return a dict representation of a network bond interface.
 
@@ -448,6 +454,7 @@ def net_bond_obj(context, name, inventory_hostname=None):
     vlan = net_vlan(context, name, inventory_hostname)
     mtu = net_mtu(context, name, inventory_hostname)
     mode = net_bond_mode(context, name, inventory_hostname)
+    ad_select = net_bond_ad_select(context, name, inventory_hostname)
     slaves = net_bond_slaves(context, name, inventory_hostname)
     miimon = net_bond_miimon(context, name, inventory_hostname)
     updelay = net_bond_updelay(context, name, inventory_hostname)
@@ -475,6 +482,7 @@ def net_bond_obj(context, name, inventory_hostname=None):
         'mtu': mtu,
         'bond_slaves': slaves,
         'bond_mode': mode,
+        'bond_ad_select': ad_select,
         'bond_miimon': miimon,
         'bond_updelay': updelay,
         'bond_downdelay': downdelay,
@@ -515,27 +523,27 @@ def _net_interface_type(context, name, inventory_hostname):
         return 'bond'
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_is_ether(context, name, inventory_hostname=None):
     return _net_interface_type(context, name, inventory_hostname) == 'ether'
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_is_bridge(context, name, inventory_hostname=None):
     return _net_interface_type(context, name, inventory_hostname) == 'bridge'
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_is_bond(context, name, inventory_hostname=None):
     return _net_interface_type(context, name, inventory_hostname) == 'bond'
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_is_vlan(context, name, inventory_hostname=None):
     return net_vlan(context, name) is not None
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_is_vlan_interface(context, name, inventory_hostname=None):
     device = get_and_validate_interface(context, name, inventory_hostname)
     # Use a heuristic to match conventional VLAN names, ending with a
@@ -543,43 +551,43 @@ def net_is_vlan_interface(context, name, inventory_hostname=None):
     return re.match(r"^[a-zA-Z0-9_\-]+\.[1-9][\d]{0,3}$", device)
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_select_ethers(context, names, inventory_hostname=None):
     return [name for name in names
             if net_is_ether(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_select_bridges(context, names, inventory_hostname=None):
     return [name for name in names
             if net_is_bridge(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_select_bonds(context, names, inventory_hostname=None):
     return [name for name in names
             if net_is_bond(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_select_vlans(context, names, inventory_hostname=None):
     return [name for name in names
             if net_is_vlan(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_select_vlan_interfaces(context, names, inventory_hostname=None):
     return [name for name in names
             if net_is_vlan_interface(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_reject_vlans(context, names, inventory_hostname=None):
     return [name for name in names
             if not net_is_vlan(context, name, inventory_hostname)]
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_configdrive_network_device(context, name, inventory_hostname=None):
     device = net_interface(context, name, inventory_hostname)
     if not device:
@@ -592,7 +600,7 @@ def net_configdrive_network_device(context, name, inventory_hostname=None):
     bootproto = net_bootproto(context, name, inventory_hostname)
     mtu = net_mtu(context, name, inventory_hostname)
     vlan = net_vlan(context, name, inventory_hostname)
-    if vlan:
+    if vlan and '.' in device:
         backend = [device.split('.')[0]]
     else:
         backend = None
@@ -605,13 +613,13 @@ def net_configdrive_network_device(context, name, inventory_hostname=None):
         'mtu': mtu,
         'backend': backend,
     }
-    if vlan:
+    if backend:
         interface['type'] = 'vlan'
     interface = {k: v for k, v in interface.items() if v is not None}
     return interface
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_libvirt_network(context, name, inventory_hostname=None):
     """Return a dict which describes the Libvirt network for a network.
 
@@ -626,7 +634,7 @@ def net_libvirt_network(context, name, inventory_hostname=None):
     }
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_libvirt_vm_network(context, name, inventory_hostname=None):
     """Return a dict which describes the Libvirt VM's network for a network.
 
@@ -640,7 +648,7 @@ def net_libvirt_vm_network(context, name, inventory_hostname=None):
     }
 
 
-@jinja2.contextfilter
+@jinja2.pass_context
 def net_ovs_veths(context, names, inventory_hostname=None):
     """Return a list of virtual Ethernet pairs for OVS.
 
@@ -670,6 +678,7 @@ def get_filters():
         'net_fqdn': _make_attr_filter('fqdn'),
         'net_ip': net_ip,
         'net_interface': net_interface,
+        'net_no_ip': net_no_ip,
         'net_cidr': net_cidr,
         'net_mask': net_mask,
         'net_prefix': net_prefix,

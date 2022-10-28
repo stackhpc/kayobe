@@ -53,8 +53,9 @@ kolla_node_custom_config_path: "{{ kolla_config_path }}/config"
 # Kolla configuration.
 
 # Kolla base container image distribution. Options are "centos", "debian",
-# "ubuntu". Default is {{ os_distribution }}.
-kolla_base_distro: "{{ os_distribution }}"
+# "ubuntu". Default is
+# {{ 'centos' if os_distribution == 'rocky' else os_distribution }}.
+kolla_base_distro: "{{ 'centos' if os_distribution == 'rocky' else os_distribution }}"
 
 # Kolla container image type: binary or source.
 kolla_install_type: "source"
@@ -154,6 +155,8 @@ overcloud_container_image_regex_map:
     enabled: "{{ kolla_enable_gnocchi | bool }}"
   - regex: ^grafana
     enabled: "{{ kolla_enable_grafana | bool }}"
+  - regex: ^hacluster
+    enabled: "{{ kolla_enable_hacluster | bool }}"
   - regex: ^haproxy$
     enabled: "{{ kolla_enable_haproxy | bool }}"
   - regex: ^heat
@@ -201,7 +204,7 @@ overcloud_container_image_regex_map:
   - regex: neutron-server
     enabled: "{{ kolla_enable_neutron | bool }}"
   # Neutron SFC agent not currently supported on CentOS binary builds.
-  - regex: "neutron-\\(dhcp\\|l3\\|metadata\\|openvswitch\\)-agent"
+  - regex: "neutron-\\(dhcp\\|l3\\|metadata\\|linuxbridge\\|openvswitch\\)-agent"
     enabled: "{{ kolla_enable_neutron | bool }}"
   - regex: neutron-mlnx-agent
     enabled: "{{ kolla_enable_neutron_mlnx | bool }}"
@@ -534,6 +537,7 @@ kolla_enable_fluentd: "yes"
 kolla_enable_freezer: "no"
 kolla_enable_gnocchi: "no"
 kolla_enable_grafana: "{{ kolla_enable_monasca | bool }}"
+kolla_enable_hacluster: "no"
 kolla_enable_heat: "{{ kolla_enable_openstack_core | bool }}"
 kolla_enable_horizon: "{{ kolla_enable_openstack_core | bool }}"
 kolla_enable_influxdb: "{{ kolla_enable_monasca | bool or kolla_enable_cloudkitty | bool }}"
@@ -554,6 +558,7 @@ kolla_enable_murano: "no"
 kolla_enable_neutron_mlnx: "no"
 kolla_enable_neutron_provider_networks: "no"
 kolla_enable_neutron_sriov: "no"
+kolla_enable_nova_libvirt_container: "yes"
 kolla_enable_octavia: "no"
 kolla_enable_openvswitch: "{{ kolla_enable_neutron | bool }}"
 kolla_enable_ovn: "no"
@@ -581,9 +586,9 @@ kolla_enable_zun: "no"
 ###############################################################################
 # Passwords and credentials.
 
-# Dictionary containing default custom passwords to add or override in the
+# Dictionary containing base custom passwords to add or override in the
 # Kolla passwords file.
-kolla_ansible_default_custom_passwords:
+kolla_ansible_base_custom_passwords:
   # SSH key authorized in hosts deployed by Bifrost.
   bifrost_ssh_key:
     private_key: "{{ lookup('file', ssh_private_key_path) }}"
@@ -593,6 +598,19 @@ kolla_ansible_default_custom_passwords:
     private_key: "{{ lookup('file', ssh_private_key_path) }}"
     public_key: "{{ lookup('file', ssh_public_key_path) }}"
   docker_registry_password: "{{ kolla_docker_registry_password }}"
+
+# Dictionary containing libvirt custom passwords to add or override in the
+# Kolla passwords file.
+kolla_ansible_libvirt_custom_passwords:
+  libvirt_sasl_password: "{{ compute_libvirt_sasl_password }}"
+
+# Dictionary containing default custom passwords to add or override in the
+# Kolla passwords file.
+kolla_ansible_default_custom_passwords: >-
+  {{ kolla_ansible_base_custom_passwords |
+     combine(kolla_ansible_libvirt_custom_passwords
+             if compute_libvirt_enabled | bool and compute_libvirt_enable_sasl | bool
+             else {}) }}
 
 # Dictionary containing custom passwords to add or override in the Kolla
 # passwords file.
@@ -649,3 +667,18 @@ kolla_internal_tls_cert:
 # in admin-openrc.sh file when TLS is enabled, instead of Kolla-Ansible's
 # default.
 kolla_internal_fqdn_cacert:
+
+###############################################################################
+# Proxy configuration
+
+# HTTP proxy URL (format: http(s)://[user:password@]proxy_name:port) used by
+# Kolla. Default value is "{{ http_proxy }}".
+kolla_http_proxy: "{{ http_proxy }}"
+
+# HTTPS proxy URL (format: http(s)://[user:password@]proxy_name:port) used by
+# Kolla. Default value is "{{ https_proxy }}".
+kolla_https_proxy: "{{ https_proxy }}"
+
+# List of domains, hostnames, IP addresses and networks for which no proxy is
+# used. Default value is "{{ no_proxy }}".
+kolla_no_proxy: "{{ no_proxy }}"

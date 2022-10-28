@@ -96,6 +96,7 @@ neutron
 
 [neutron-ovn-metadata-agent:children]
 compute
+network
 
 [neutron-bgp-dragent:children]
 neutron
@@ -212,9 +213,6 @@ monasca-agent
 monasca
 
 [monasca-grafana:children]
-monasca
-
-[monasca-log-transformer:children]
 monasca
 
 [monasca-log-persister:children]

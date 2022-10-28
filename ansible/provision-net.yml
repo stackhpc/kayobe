@@ -18,6 +18,7 @@
     venv: "{{ virtualenv_path }}/openstacksdk"
     provision_net:
       name: "{{ kolla_ironic_provisioning_network }}"
+      mtu: "{{ provision_wl_net_name | net_mtu | default(omit, True) }}"
       provider_network_type: "{% if provision_wl_net_name | net_vlan %}vlan{% else %}flat{% endif %}"
       provider_physical_network: "{{ provision_wl_net_name | net_physical_network | default('physnet1', True) }}"
       provider_segmentation_id: "{{ provision_wl_net_name | net_vlan }}"
@@ -31,6 +32,7 @@
           allocation_pool_end: "{{ provision_wl_net_name | net_neutron_allocation_pool_end }}"
     cleaning_net:
       name: "{{ kolla_ironic_cleaning_network }}"
+      mtu: "{{ cleaning_net_name | net_mtu | default(omit, True) }}"
       provider_network_type: "{% if cleaning_net_name | net_vlan %}vlan{% else %}flat{% endif %}"
       provider_physical_network: "{{ cleaning_net_name | net_physical_network | default('physnet1', True) }}"
       provider_segmentation_id: "{{ cleaning_net_name | net_vlan }}"
@@ -64,7 +66,7 @@
     - role: stackhpc.os-networks
       os_openstacksdk_install_epel: "{{ dnf_install_epel }}"
       os_openstacksdk_state: latest
-      os_openstacksdk_upper_constraints_file: "{{ pip_upper_constraints_file }}"
+      os_networks_upper_constraints_file: "{{ pip_upper_constraints_file }}"
       os_networks_venv: "{{ venv }}"
       os_networks_auth_type: "{{ openstack_auth_type }}"
       os_networks_auth: "{{ openstack_auth }}"

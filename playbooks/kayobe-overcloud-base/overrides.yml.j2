@@ -30,13 +30,24 @@ pip_trusted_hosts:
 aio_bridge_ports:
   - dummy1
 
+# Generate a password for libvirt SASL authentication.
+compute_libvirt_sasl_password: "{% raw %}{{ lookup('password', '/tmp/libvirt-sasl-password') }}{% endraw %}"
+
 # Enable ironic for testing baremetal compute.
 kolla_enable_ironic: true
 
 {% if tls_enabled %}
+kolla_enable_nova_libvirt_container: false
+compute_libvirt_enable_tls: true
+
 kolla_enable_tls_external: "yes"
 kolla_enable_tls_internal: "yes"
 
 kolla_ironic_pxe_append_params_extra:
   - ipa-insecure=1
+
+# When TLS is enabled, extra RAM usage is causing the OOM killer to terminate
+# Tenks VMs. Disable Heat and Horizon to free up enough memory.
+kolla_enable_heat: false
+kolla_enable_horizon: false
 {% endif %}

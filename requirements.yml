@@ -1,4 +1,8 @@
 ---
+collections:
+  - name: dellemc.os10
+    version: 1.1.1
+
 roles:
   - src: ahuffman.resolv
     version: 1.3.1
@@ -10,7 +14,7 @@ roles:
     # There are no versioned releases of this role.
     version: 29871bf3279ef95fc8f7339b9abd13f869980750
   - src: MichaelRigart.interfaces
-    version: v1.12.0
+    version: v1.13.1
   - src: mrlesmithjr.chrony
     version: v0.1.4
   - src: mrlesmithjr.manage-lvm
@@ -22,21 +26,21 @@ roles:
   - src: stackhpc.dell-powerconnect-switch
     version: v1.1.0
   - src: stackhpc.drac
-    version: 1.1.5
+    version: 1.1.6
   - src: stackhpc.drac-facts
     version: 1.0.0
   - src: stackhpc.grafana-conf
     version: 1.1.1
   - src: stackhpc.libvirt-host
-    version: v1.8.3
+    version: v1.11.0
   - src: stackhpc.libvirt-vm
     version: v1.14.2
   - src: stackhpc.luks
-    version: 0.4.1
+    version: 0.4.2
   - src: stackhpc.mellanox-switch
     version: v1.0.0
   - src: stackhpc.os-images
-    version: v1.10.7
+    version: v1.15.0
   - src: stackhpc.os-ironic-state
     version: v1.3.1
   - src: stackhpc.os-networks
