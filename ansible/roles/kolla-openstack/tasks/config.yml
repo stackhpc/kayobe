@@ -67,8 +67,11 @@
   with_items: "{{ kolla_custom_config_info['copy'] }}"
 
 - name: Ensure merged ini extra configuration files exist
-  merge_configs:
-    sources: "{{ item.sources }}"
+  copy:
+    content: |
+       {% for path in item.sources %} 
+       {{ lookup('template', path) }}
+       {% endfor %}
     dest: "{{ item.dest }}"
     mode: 0640
   with_items: "{{ kolla_custom_config_info.merge_ini }}"
