@@ -78,7 +78,7 @@ class ConfigCollector(object):
 
             for glob_ in self.merge_yml_globs:
                 if glob.globmatch(relative_path, glob_["glob"],
-                        flags=glob.GLOBSTAR):
+                        flags=glob.GLOBSTAR) and len(sources) > 1:
                     merge_yaml = {
                         "sources": sources,
                         "dest": destination
@@ -93,7 +93,7 @@ class ConfigCollector(object):
 
             for glob_ in self.merge_ini_globs:
                 if glob.globmatch(relative_path, glob_["glob"],
-                        flags=glob.GLOBSTAR):
+                        flags=glob.GLOBSTAR) and len(sources) > 1:
                     merge_ini = {
                         "sources": sources,
                         "dest": destination
