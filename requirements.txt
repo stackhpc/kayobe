@@ -12,4 +12,4 @@ selinux # MIT
 oslo.config>=5.2.0 # Apache-2.0
 wcmatch>=8.2<=9.0
 ansible-cached-lookup
-
+paramiko # LGPL
