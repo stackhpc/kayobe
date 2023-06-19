@@ -54,17 +54,21 @@ class TestCase(unittest.TestCase):
         kolla_ansible.add_args(parser)
         vault.add_args(parser)
         args = [
+            "-C",
+            "-D",
             "--kolla-config-path", "/path/to/config",
             "-ke", "ev_name1=ev_value1",
             "-ki", "/path/to/inventory",
             "-kl", "host1:host2",
             "-kt", "tag1,tag2",
+            "-kp", "/path/to/playbook",
         ]
         parsed_args = parser.parse_args(args)
         kolla_ansible.run(parsed_args, "command", "overcloud")
         expected_cmd = [
             ".", "/path/to/cwd/venvs/kolla-ansible/bin/activate", "&&",
             "kolla-ansible", "command",
+            "--playbook", "/path/to/playbook",
             "--inventory", "/path/to/inventory",
             "--configdir", "/path/to/config",
             "--passwords", "/path/to/config/passwords.yml",
@@ -73,8 +77,9 @@ class TestCase(unittest.TestCase):
             "--tags", "tag1,tag2",
         ]
         expected_cmd = " ".join(expected_cmd)
+        expected_env = {"EXTRA_OPTS": " --check --diff"}
         mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
-                                         env={})
+                                         env=expected_env)
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(kolla_ansible, "_validate_args")
@@ -87,12 +92,15 @@ class TestCase(unittest.TestCase):
         mock_ask.return_value = "test-pass"
         args = [
             "--ask-vault-pass",
+            "--check",
+            "--diff",
             "--kolla-config-path", "/path/to/config",
             "--kolla-extra-vars", "ev_name1=ev_value1",
             "--kolla-inventory", "/path/to/inventory",
             "--kolla-limit", "host1:host2",
             "--kolla-skip-tags", "tag3,tag4",
             "--kolla-tags", "tag1,tag2",
+            "--kolla-playbook", "/path/to/playbook",
         ]
         parsed_args = parser.parse_args(args)
         mock_run.return_value = "/path/to/kayobe-vault-password-helper"
@@ -100,6 +108,7 @@ class TestCase(unittest.TestCase):
         expected_cmd = [
             ".", "/path/to/cwd/venvs/kolla-ansible/bin/activate", "&&",
             "kolla-ansible", "command",
+            "--playbook", "/path/to/playbook",
             "--key", "/path/to/kayobe-vault-password-helper",
             "--inventory", "/path/to/inventory",
             "--configdir", "/path/to/config",
@@ -110,7 +119,8 @@ class TestCase(unittest.TestCase):
             "--tags", "tag1,tag2",
         ]
         expected_cmd = " ".join(expected_cmd)
-        expected_env = {"KAYOBE_VAULT_PASSWORD": "test-pass"}
+        expected_env = {"EXTRA_OPTS": " --check --diff",
+                        "KAYOBE_VAULT_PASSWORD": "test-pass"}
         expected_calls = [
             mock.call(["which", "kayobe-vault-password-helper"],
                       check_output=True, universal_newlines=True),

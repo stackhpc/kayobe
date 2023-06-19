@@ -39,6 +39,11 @@ For example, to install Bifrost from a custom git repository:
 Overcloud root disk image configuration
 =======================================
 
+.. note::
+
+   This configuration only applies when ``overcloud_dib_build_host_images``
+   (set in ``${KAYOBE_CONFIG_PATH}/overcloud-dib.yml``) is not changed to true.
+
 Bifrost uses Diskimage builder (DIB) to build a root disk image that is
 deployed to overcloud hosts when they are provisioned. The following options
 configure how this image is built.  Consult the
@@ -179,6 +184,23 @@ Rather than needing to write a custom DIB element, we can use the
    kolla_bifrost_dib_packages:
      - "biosdevname"
 
+.. _configuration-bifrost-image-deployment-config:
+
+Disk image deployment configuration
+===================================
+
+The name of the root disk image to deploy can be configured via the
+``kolla_bifrost_deploy_image_filename`` option, which defaults to
+``deployment_image.qcow2``. It can be defined globally in
+``${KAYOBE_CONFIG_PATH}/bifrost.yml``, or defined per-group or per-host in the
+Kayobe inventory. This can be used to provision different images across the
+overcloud.
+
+While only a single disk image can be built with Bifrost, starting from the
+Yoga 12.0.0 release, Kayobe supports building multiple disk images directly
+through Diskimage builder. Consult the :ref:`overcloud host disk image build
+documentation <overcloud-dib>` for more details.
+
 Ironic configuration
 ====================
 
@@ -285,7 +307,7 @@ Inventory configuration
    This feature is currently not well tested. It is advisable to use
    autodiscovery of overcloud servers instead.
 
-The following options are used to configure a static inventory of servers for
+The following option is used to configure a static inventory of servers for
 Bifrost.
 
 ``kolla_bifrost_servers``

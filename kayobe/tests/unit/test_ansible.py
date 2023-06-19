@@ -68,6 +68,7 @@ class TestCase(unittest.TestCase):
             "-b",
             "-C",
             "--config-path", "/path/to/config",
+            "-D",
             "--environment", "test-env",
             "-e", "ev_name1=ev_value1",
             "-i", "/path/to/inventory",
@@ -88,6 +89,7 @@ class TestCase(unittest.TestCase):
             "-e", "ev_name1=ev_value1",
             "--become",
             "--check",
+            "--diff",
             "--limit", "group1:host",
             "--tags", "tag1,tag2",
             "playbook1.yml",
@@ -117,6 +119,7 @@ class TestCase(unittest.TestCase):
             "--become",
             "--check",
             "--config-path", "/path/to/config",
+            "--diff",
             "--environment", "test-env",
             "--extra-vars", "ev_name1=ev_value1",
             "--inventory", "/path/to/inventory",
@@ -138,6 +141,7 @@ class TestCase(unittest.TestCase):
             "-e", "ev_name1=ev_value1",
             "--become",
             "--check",
+            "--diff",
             "--limit", "group1:host1",
             "--skip-tags", "tag3,tag4",
             "--tags", "tag1,tag2",
@@ -249,6 +253,7 @@ class TestCase(unittest.TestCase):
             "tags": "tag3,tag4",
             "verbose_level": 0,
             "check": True,
+            "diff": True,
         }
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"],
                               **kwargs)
@@ -260,6 +265,7 @@ class TestCase(unittest.TestCase):
             "-e", "ev_name1=ev_value1",
             "-e", "ev_name2='ev_value2'",
             "--check",
+            "--diff",
             "--limit", "group1:host1:&group2:host2",
             "--tags", "tag1,tag2,tag3,tag4",
             "playbook1.yml",
@@ -426,7 +432,7 @@ class TestCase(unittest.TestCase):
                                          },
                                          check_output=True, tags=None,
                                          verbose_level=None, check=False,
-                                         list_tasks=False)
+                                         list_tasks=False, diff=False)
         mock_rmtree.assert_called_once_with(dump_dir)
         mock_listdir.assert_any_call(dump_dir)
         mock_read.assert_has_calls([
@@ -434,7 +440,7 @@ class TestCase(unittest.TestCase):
             mock.call(os.path.join(dump_dir, "host2.yml")),
         ])
 
-    @mock.patch.object(utils, 'galaxy_install', autospec=True)
+    @mock.patch.object(utils, 'galaxy_role_install', autospec=True)
     @mock.patch.object(utils, 'is_readable_file', autospec=True)
     @mock.patch.object(os, 'makedirs', autospec=True)
     def test_install_galaxy_roles(self, mock_mkdirs, mock_is_readable,
@@ -453,7 +459,7 @@ class TestCase(unittest.TestCase):
             "/etc/kayobe/ansible/requirements.yml")
         self.assertFalse(mock_mkdirs.called)
 
-    @mock.patch.object(utils, 'galaxy_install', autospec=True)
+    @mock.patch.object(utils, 'galaxy_role_install', autospec=True)
     @mock.patch.object(utils, 'is_readable_file', autospec=True)
     @mock.patch.object(os, 'makedirs', autospec=True)
     def test_install_galaxy_roles_with_kayobe_config(
@@ -476,7 +482,7 @@ class TestCase(unittest.TestCase):
             "/etc/kayobe/ansible/requirements.yml")
         mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/roles")
 
-    @mock.patch.object(utils, 'galaxy_install', autospec=True)
+    @mock.patch.object(utils, 'galaxy_role_install', autospec=True)
     @mock.patch.object(utils, 'is_readable_file', autospec=True)
     @mock.patch.object(os, 'makedirs', autospec=True)
     def test_install_galaxy_roles_with_kayobe_config_forced(
@@ -499,7 +505,7 @@ class TestCase(unittest.TestCase):
             "/etc/kayobe/ansible/requirements.yml")
         mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/roles")
 
-    @mock.patch.object(utils, 'galaxy_install', autospec=True)
+    @mock.patch.object(utils, 'galaxy_role_install', autospec=True)
     @mock.patch.object(utils, 'is_readable_file', autospec=True)
     @mock.patch.object(os, 'makedirs', autospec=True)
     def test_install_galaxy_roles_with_kayobe_config_mkdirs_failure(
@@ -519,6 +525,92 @@ class TestCase(unittest.TestCase):
         mock_is_readable.assert_called_once_with(
             "/etc/kayobe/ansible/requirements.yml")
         mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/roles")
+
+    @mock.patch.object(utils, 'galaxy_collection_install', autospec=True)
+    @mock.patch.object(utils, 'is_readable_file', autospec=True)
+    @mock.patch.object(os, 'makedirs', autospec=True)
+    def test_install_galaxy_collections(self, mock_mkdirs, mock_is_readable,
+                                        mock_install):
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        parsed_args = parser.parse_args([])
+        mock_is_readable.return_value = {"result": False}
+
+        ansible.install_galaxy_collections(parsed_args)
+
+        mock_install.assert_called_once_with(utils.get_data_files_path(
+            "requirements.yml"), utils.get_data_files_path(
+            "ansible", "collections"), force=False)
+        mock_is_readable.assert_called_once_with(
+            "/etc/kayobe/ansible/requirements.yml")
+        self.assertFalse(mock_mkdirs.called)
+
+    @mock.patch.object(utils, 'galaxy_collection_install', autospec=True)
+    @mock.patch.object(utils, 'is_readable_file', autospec=True)
+    @mock.patch.object(os, 'makedirs', autospec=True)
+    def test_install_galaxy_collections_with_kayobe_config(
+            self, mock_mkdirs, mock_is_readable, mock_install):
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        parsed_args = parser.parse_args([])
+        mock_is_readable.return_value = {"result": True}
+
+        ansible.install_galaxy_collections(parsed_args)
+
+        expected_calls = [
+            mock.call(utils.get_data_files_path("requirements.yml"),
+                      utils.get_data_files_path("ansible", "collections"),
+                      force=False),
+            mock.call("/etc/kayobe/ansible/requirements.yml",
+                      "/etc/kayobe/ansible/collections", force=False)]
+        self.assertEqual(expected_calls, mock_install.call_args_list)
+        mock_is_readable.assert_called_once_with(
+            "/etc/kayobe/ansible/requirements.yml")
+        mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/collections")
+
+    @mock.patch.object(utils, 'galaxy_collection_install', autospec=True)
+    @mock.patch.object(utils, 'is_readable_file', autospec=True)
+    @mock.patch.object(os, 'makedirs', autospec=True)
+    def test_install_galaxy_collections_with_kayobe_config_forced(
+            self, mock_mkdirs, mock_is_readable, mock_install):
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        parsed_args = parser.parse_args([])
+        mock_is_readable.return_value = {"result": True}
+
+        ansible.install_galaxy_collections(parsed_args, force=True)
+
+        expected_calls = [
+            mock.call(utils.get_data_files_path("requirements.yml"),
+                      utils.get_data_files_path("ansible", "collections"),
+                      force=True),
+            mock.call("/etc/kayobe/ansible/requirements.yml",
+                      "/etc/kayobe/ansible/collections", force=True)]
+        self.assertEqual(expected_calls, mock_install.call_args_list)
+        mock_is_readable.assert_called_once_with(
+            "/etc/kayobe/ansible/requirements.yml")
+        mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/collections")
+
+    @mock.patch.object(utils, 'galaxy_collection_install', autospec=True)
+    @mock.patch.object(utils, 'is_readable_file', autospec=True)
+    @mock.patch.object(os, 'makedirs', autospec=True)
+    def test_install_galaxy_collections_with_kayobe_config_mkdirs_failure(
+            self, mock_mkdirs, mock_is_readable, mock_install):
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        parsed_args = parser.parse_args([])
+        mock_is_readable.return_value = {"result": True}
+        mock_mkdirs.side_effect = OSError(errno.EPERM)
+
+        self.assertRaises(exception.Error,
+                          ansible.install_galaxy_collections, parsed_args)
+
+        mock_install.assert_called_once_with(
+            utils.get_data_files_path("requirements.yml"),
+            utils.get_data_files_path("ansible", "collections"), force=False)
+        mock_is_readable.assert_called_once_with(
+            "/etc/kayobe/ansible/requirements.yml")
+        mock_mkdirs.assert_called_once_with("/etc/kayobe/ansible/collections")
 
     @mock.patch.object(utils, 'galaxy_remove', autospec=True)
     def test_prune_galaxy_roles(self, mock_remove):

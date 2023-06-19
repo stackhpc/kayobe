@@ -21,6 +21,11 @@ kolla_ansible_venv_python: python3
 # Extra requirements to install inside the kolla-ansible virtualenv.
 kolla_ansible_venv_extra_requirements: []
 
+# Pip requirement specifier for the ansible package. NOTE: This limits the
+# version of ansible used by kolla-ansible to avoid new releases from breaking
+# tested code. Changes to this limit should be tested.
+kolla_ansible_venv_ansible: 'ansible>=2.9,<2.11,!=2.9.8,!=2.9.12'
+
 # Virtualenv directory where Kolla-ansible's ansible modules will execute
 # remotely on the target nodes. If None, no virtualenv will be used.
 kolla_ansible_target_venv:
@@ -132,7 +137,6 @@ kolla_external_vip_address:
 # kolla_external_vip_address.
 kolla_external_fqdn:
 
-
 ####################
 # Networking options
 ####################
@@ -231,11 +235,31 @@ kolla_openstack_logging_debug:
 # controllers.
 kolla_nova_compute_ironic_host:
 
+kolla_libvirt_tls:
+
+kolla_libvirt_enable_sasl:
+
 ###############################################################################
 # Extra free-form configuraton.
 
+# Deprecated:
 # Free form extra configuration to append to {{ kolla_config_path }}/globals.yml.
 kolla_extra_globals:
+
+# List of paths to YAML files containing extra configuration to merge to {{
+# kolla_config_path }}/globals.yml. Default is include the globals.yml template
+# from the role.
+kolla_globals_paths_default:
+  - "{{ role_path }}/templates"
+
+# List of paths to YAML files containing extra configuration to merge to {{
+# kolla_config_path }}/globals.yml. Default is an empty list.
+kolla_globals_paths_extra: []
+
+# List of paths to YAML files containing extra configuration to merge to {{
+# kolla_config_path }}/globals.yml. Default is combination of
+# kolla_globals_paths_default and kolla_globals_paths_extra.
+kolla_globals_paths: "{{ kolla_globals_paths_default + kolla_globals_paths_extra }}"
 
 # Dictionary containing custom passwords to add or override in the Kolla
 # passwords file.
@@ -287,3 +311,16 @@ docker_daemon_mtu: 1500
 
 # Enable live-restore on docker daemon
 docker_daemon_live_restore: false
+
+###############################################################################
+# Proxy configuration
+
+# HTTP proxy URL (format: http(s)://[user:password@]proxy_name:port).
+kolla_http_proxy:
+
+# HTTPS proxy URL (format: http(s)://[user:password@]proxy_name:port).
+kolla_https_proxy:
+
+# List of domains, hostnames, IP addresses and networks for which no proxy is
+# used.
+kolla_no_proxy:

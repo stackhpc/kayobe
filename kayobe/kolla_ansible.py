@@ -56,6 +56,8 @@ def add_args(parser):
     parser.add_argument("-kl", "--kolla-limit", metavar="SUBSET",
                         help="further limit selected hosts to an additional "
                              "pattern")
+    parser.add_argument("-kp", "--kolla-playbook", metavar="PLAYBOOK",
+                        help="path to Ansible playbook file")
     parser.add_argument("--kolla-skip-tags", metavar="TAGS",
                         help="only run plays and tasks whose tags do not "
                              "match these values in Kolla Ansible")
@@ -104,6 +106,13 @@ def _validate_args(parsed_args, inventory_filename):
                   parsed_args.kolla_venv, result["message"])
         sys.exit(1)
 
+    if parsed_args.kolla_playbook:
+        result = utils.is_readable_file(parsed_args.kolla_playbook)
+        if not result["result"]:
+            LOG.error("Kolla Ansible playbook %s is invalid: %s",
+                      parsed_args.kolla_playbook, result["message"])
+            sys.exit(1)
+
 
 def build_args(parsed_args, command, inventory_filename, extra_vars=None,
                tags=None, verbose_level=None, extra_args=None, limit=None):
@@ -113,6 +122,8 @@ def build_args(parsed_args, command, inventory_filename, extra_vars=None,
     cmd += ["kolla-ansible", command]
     if verbose_level:
         cmd += ["-" + "v" * verbose_level]
+    if parsed_args.kolla_playbook:
+        cmd += ["--playbook", parsed_args.kolla_playbook]
     cmd += vault.build_args(parsed_args, "--key")
     inventory = _get_inventory_path(parsed_args, inventory_filename)
     cmd += ["--inventory", inventory]
@@ -157,6 +168,14 @@ def _get_environment(parsed_args):
         ansible_cfg_path = os.path.join(parsed_args.config_path, "ansible.cfg")
         if utils.is_readable_file(ansible_cfg_path)["result"]:
             env.setdefault("ANSIBLE_CONFIG", ansible_cfg_path)
+    # kolla-ansible allows passing additional arguments to ansible-playbook via
+    # EXTRA_OPTS.
+    if parsed_args.check or parsed_args.diff:
+        extra_opts = env.setdefault("EXTRA_OPTS", "")
+        if parsed_args.check and "--check" not in extra_opts:
+            env["EXTRA_OPTS"] += " --check"
+        if parsed_args.diff and "--diff" not in extra_opts:
+            env["EXTRA_OPTS"] += " --diff"
     return env
 
 

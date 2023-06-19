@@ -74,6 +74,7 @@ kolla_feature_flags:
   - aodh
   - barbican
   - blazar
+  - caso
   - ceilometer
   - ceilometer_horizon_policy_file
   - ceilometer_ipmi
@@ -181,6 +182,7 @@ kolla_feature_flags:
   - nova
   - nova_fake
   - nova_horizon_policy_file
+  - nova_libvirt_container
   - nova_serialconsole_proxy
   - nova_ssh
   - octavia
@@ -200,6 +202,7 @@ kolla_feature_flags:
   - prometheus_ceph_mgr_exporter
   - prometheus_elasticsearch_exporter
   - prometheus_haproxy_exporter
+  - prometheus_libvirt_exporter
   - prometheus_memcached_exporter
   - prometheus_mysqld_exporter
   - prometheus_node_exporter

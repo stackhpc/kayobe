@@ -48,6 +48,10 @@ def add_args(parser):
                         help="path to Kayobe configuration. "
                              "(default=$%s or %s)" %
                              (CONFIG_PATH_ENV, DEFAULT_CONFIG_PATH))
+    parser.add_argument("-D", "--diff", action="store_true",
+                        help="when changing (small) files and templates, show "
+                             "the differences in those files; works great "
+                             "with --check")
     parser.add_argument("--environment", default=default_environment,
                         help="specify environment name (default=$%s or None)" %
                              ENVIRONMENT_ENV)
@@ -73,6 +77,9 @@ def add_args(parser):
                         action="store_true",
                         help="only print names of tasks, don't run them, "
                              "note this has no affect on kolla-ansible.")
+    parser.add_argument("-sh", "--skip-hooks", action="store", default=None,
+                        help="disables hooks. Specify a pattern to skip"
+                             "specific playbooks. \"all\" skips all playbooks")
 
 
 def _get_kayobe_environment_path(parsed_args):
@@ -161,7 +168,7 @@ def _get_vars_files(vars_paths):
 
 def build_args(parsed_args, playbooks,
                extra_vars=None, limit=None, tags=None, verbose_level=None,
-               check=None, ignore_limit=False, list_tasks=None):
+               check=None, ignore_limit=False, list_tasks=None, diff=None):
     """Build arguments required for running Ansible playbooks."""
     cmd = ["ansible-playbook"]
     if verbose_level:
@@ -193,6 +200,8 @@ def build_args(parsed_args, playbooks,
         cmd += ["--become"]
     if check or (parsed_args.check and check is None):
         cmd += ["--check"]
+    if diff or (parsed_args.diff and diff is None):
+        cmd += ["--diff"]
     if not ignore_limit and (parsed_args.limit or limit):
         limit_arg = utils.intersect_limits(parsed_args.limit, limit)
         cmd += ["--limit", limit_arg]
@@ -227,13 +236,14 @@ def _get_environment(parsed_args):
 def run_playbooks(parsed_args, playbooks,
                   extra_vars=None, limit=None, tags=None, quiet=False,
                   check_output=False, verbose_level=None, check=None,
-                  ignore_limit=False, list_tasks=None):
+                  ignore_limit=False, list_tasks=None, diff=None):
     """Run a Kayobe Ansible playbook."""
     _validate_args(parsed_args, playbooks)
     cmd = build_args(parsed_args, playbooks,
                      extra_vars=extra_vars, limit=limit, tags=tags,
                      verbose_level=verbose_level, check=check,
-                     ignore_limit=ignore_limit, list_tasks=list_tasks)
+                     ignore_limit=ignore_limit, list_tasks=list_tasks,
+                     diff=diff)
     env = _get_environment(parsed_args)
     try:
         utils.run_command(cmd, check_output=check_output, quiet=quiet, env=env)
@@ -269,7 +279,7 @@ def config_dump(parsed_args, host=None, hosts=None, var_name=None,
         run_playbook(parsed_args, playbook_path,
                      extra_vars=extra_vars, tags=tags, check_output=True,
                      verbose_level=verbose_level, check=False,
-                     list_tasks=False)
+                     list_tasks=False, diff=False)
         hostvars = {}
         for path in os.listdir(dump_dir):
             LOG.debug("Found dump file %s", path)
@@ -291,7 +301,7 @@ def config_dump(parsed_args, host=None, hosts=None, var_name=None,
 def install_galaxy_roles(parsed_args, force=False):
     """Install Ansible Galaxy role dependencies.
 
-    Installs dependencies specified in kayobe, and if present, in kayobe
+    Installs role dependencies specified in kayobe, and if present, in kayobe
     configuration.
 
     :param parsed_args: Parsed command line arguments.
@@ -300,7 +310,7 @@ def install_galaxy_roles(parsed_args, force=False):
     LOG.info("Installing galaxy role dependencies from kayobe")
     requirements = utils.get_data_files_path("requirements.yml")
     roles_destination = utils.get_data_files_path('ansible', 'roles')
-    utils.galaxy_install(requirements, roles_destination, force=force)
+    utils.galaxy_role_install(requirements, roles_destination, force=force)
 
     # Check for requirements in kayobe configuration.
     kc_reqs_path = os.path.join(parsed_args.config_path,
@@ -323,7 +333,49 @@ def install_galaxy_roles(parsed_args, force=False):
                                   (parsed_args.config_path, str(e)))
 
     # Install roles from kayobe-config.
-    utils.galaxy_install(kc_reqs_path, kc_roles_path, force=force)
+    utils.galaxy_role_install(kc_reqs_path, kc_roles_path, force=force)
+
+
+def install_galaxy_collections(parsed_args, force=False):
+    """Install Ansible Galaxy collection dependencies.
+
+    Installs collection dependencies specified in kayobe, and if present, in
+    kayobe configuration.
+
+    :param parsed_args: Parsed command line arguments.
+    :param force: Whether to force reinstallation of roles.
+    """
+    LOG.info("Installing galaxy collection dependencies from kayobe")
+    requirements = utils.get_data_files_path("requirements.yml")
+    collections_destination = utils.get_data_files_path('ansible',
+                                                        'collections')
+    utils.galaxy_collection_install(requirements, collections_destination,
+                                    force=force)
+
+    # Check for requirements in kayobe configuration.
+    kc_reqs_path = os.path.join(parsed_args.config_path,
+                                "ansible", "requirements.yml")
+    if not utils.is_readable_file(kc_reqs_path)["result"]:
+        LOG.info("Not installing galaxy collection dependencies from kayobe "
+                 "config - requirements.yml not present")
+        return
+
+    LOG.info("Installing galaxy collection dependencies from kayobe config")
+    # Ensure a collections directory exists in kayobe-config.
+    kc_collections_path = os.path.join(parsed_args.config_path,
+                                       "ansible", "collections")
+    try:
+        os.makedirs(kc_collections_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise exception.Error("Failed to create directory "
+                                  "ansible/collections/ "
+                                  "in kayobe configuration at %s: %s" %
+                                  (parsed_args.config_path, str(e)))
+
+    # Install collections from kayobe-config.
+    utils.galaxy_collection_install(kc_reqs_path, kc_collections_path,
+                                    force=force)
 
 
 def prune_galaxy_roles(parsed_args):

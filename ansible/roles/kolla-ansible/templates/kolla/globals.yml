@@ -1,6 +1,4 @@
 ---
-# {{ ansible_managed }}
-
 # You can use this file to override _any_ variable throughout Kolla.
 # Additional options can be found in the
 # 'kolla-ansible/ansible/group_vars/all.yml' file. Default value of all the
@@ -52,6 +50,17 @@ kolla_external_vip_address: "{{ kolla_external_vip_address }}"
 kolla_external_fqdn: "{{ kolla_external_fqdn }}"
 {% endif %}
 
+# Proxy settings for containers such as magnum that need Internet access
+{% if kolla_http_proxy is not none and kolla_http_proxy | length > 0 %}
+container_http_proxy: "{{ kolla_http_proxy }}"
+{% endif %}
+{% if kolla_https_proxy is not none and kolla_https_proxy | length > 0 %}
+container_https_proxy: "{{ kolla_https_proxy }}"
+{% endif %}
+{% if kolla_no_proxy is not none and kolla_no_proxy | length > 0 %}
+container_no_proxy: "{{ kolla_no_proxy | select | join(',') }}"
+{% endif %}
+
 ################
 # Docker options
 ################
@@ -67,6 +76,16 @@ docker_registry_username: "{{ kolla_docker_registry_username }}"
 {% endif %}
 docker_storage_driver: "{{ docker_storage_driver }}"
 docker_custom_config: {{ kolla_docker_custom_config | to_nice_json | indent(2) }}
+
+{% if kolla_http_proxy is not none and kolla_http_proxy | length > 0 %}
+docker_http_proxy: "{{ kolla_http_proxy }}"
+{% endif %}
+{% if kolla_https_proxy is not none and kolla_https_proxy | length > 0 %}
+docker_https_proxy: "{{ kolla_https_proxy }}"
+{% endif %}
+{% if kolla_no_proxy is not none and kolla_no_proxy | length > 0 %}
+docker_no_proxy: "{{ kolla_no_proxy | select | join(',') }}"
+{% endif %}
 
 #docker_configure_for_zun: "no"
 
@@ -114,7 +133,7 @@ docker_custom_config: {{ kolla_docker_custom_config | to_nice_json | indent(2) }
 #dns_address_family: "{% raw %}{{ network_address_family }}{% endraw %}"
 
 # Valid options are [ openvswitch, linuxbridge ]
-neutron_plugin_agent: "openvswitch"
+neutron_plugin_agent: "{% if kolla_enable_ovn | default(False) | bool %}ovn{% else %}openvswitch{% endif %}"
 
 # Valid options are [ internal, infoblox ]
 #neutron_ipam_driver: "internal"
@@ -377,6 +396,13 @@ enable_{{ feature_flag }}: {{ hostvars[inventory_hostname]['kolla_enable_' ~ fea
 # Valid options are [ none, novnc, spice, rdp ]
 #nova_console: "novnc"
 
+{% if kolla_libvirt_tls is not none %}
+libvirt_tls: {{ kolla_libvirt_tls | bool }}
+{% endif %}
+
+{% if kolla_libvirt_enable_sasl is not none %}
+libvirt_enable_sasl: {{ kolla_libvirt_enable_sasl | bool }}
+{% endif %}
 #################
 # Hyper-V options
 #################
@@ -564,6 +590,9 @@ kolla_group: "{{ kolla_ansible_group }}"
 {% if kolla_ansible_target_venv %}
 virtualenv: {{ kolla_ansible_target_venv }}
 {% endif %}
+
+# Avoid disabling the firewall on CentOS, since we manage it in Kayobe.
+disable_firewall: "{% raw %}{{ ansible_facts.os_family == 'Debian' }}{% endraw %}"
 
 {% if kolla_extra_globals %}
 #######################

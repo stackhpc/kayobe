@@ -18,7 +18,9 @@ options.
    kolla
    kolla-ansible
    bifrost
+   overcloud-dib
    ironic-python-agent
    docker-registry
    seed-custom-containers
+   infra-vms
    nova-cells
