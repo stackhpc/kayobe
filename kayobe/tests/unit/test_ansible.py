@@ -23,6 +23,7 @@ from unittest import mock
 
 from kayobe import ansible
 from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -235,9 +236,13 @@ class TestCase(unittest.TestCase):
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(ansible, "_get_vars_files")
     @mock.patch.object(ansible, "_validate_args")
-    def test_run_playbooks_func_args(self, mock_validate, mock_vars, mock_run):
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_playbooks_func_args(self, mock_rmtree, mock_mkdtemp,
+                                     mock_validate, mock_vars, mock_run):
         mock_vars.return_value = ["/etc/kayobe/vars-file1.yml",
                                   "/etc/kayobe/vars-file2.yaml"]
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
         parser = argparse.ArgumentParser()
         ansible.add_args(parser)
         vault.add_args(parser)
@@ -254,6 +259,7 @@ class TestCase(unittest.TestCase):
             "verbose_level": 0,
             "check": True,
             "diff": True,
+            "continue_on_unreachable": True,
         }
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"],
                               **kwargs)
@@ -271,10 +277,14 @@ class TestCase(unittest.TestCase):
             "playbook1.yml",
             "playbook2.yml",
         ]
-        expected_env = {"KAYOBE_CONFIG_PATH": "/etc/kayobe"}
+        expected_env = {
+            "KAYOBE_CONFIG_PATH": "/etc/kayobe",
+            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
         mock_run.assert_called_once_with(expected_cmd, check_output=False,
                                          quiet=False, env=expected_env)
         mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(ansible, "_get_vars_files")
@@ -400,6 +410,70 @@ class TestCase(unittest.TestCase):
         mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
         self.assertRaises(SystemExit,
                           ansible.run_playbooks, parsed_args, ["command"])
+
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(ansible, "_get_vars_files")
+    @mock.patch.object(ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def _test_run_playbooks_continue_on_unreachable(
+            self, run_stats, expected_exc,
+            mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_vars, mock_run):
+        mock_vars.return_value = ["/etc/kayobe/vars-file1.yml"]
+        mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = run_stats
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
+        self.assertRaises(expected_exc,
+                          ansible.run_playbooks, parsed_args,
+                          ["playbook1.yml"], continue_on_unreachable=True)
+        expected_cmd = [
+            "ansible-playbook",
+            "--inventory", "/etc/kayobe/inventory",
+            "-e", "@/etc/kayobe/vars-file1.yml",
+            "playbook1.yml",
+        ]
+        expected_env = {
+            "KAYOBE_CONFIG_PATH": "/etc/kayobe",
+            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+        mock_run.assert_called_once_with(expected_cmd, check_output=False,
+                                         quiet=False, env=expected_env)
+        mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
+
+    def test_run_playbooks_continue_on_unreachable(self):
+        # Execution reached the end with 1 unreachable host and no failed
+        # hosts - continue.
+        run_stats = stats.Stats(
+            num_failures=0, num_unreachable=1,
+            failures=[], unreachable=[],
+            no_hosts_remaining=False)
+        self._test_run_playbooks_continue_on_unreachable(
+            run_stats, exception.ContinueOnError)
+
+    def test_run_playbooks_continue_on_unreachable_failures(self):
+        # Execution reached the end with 1 unreachable host and 1 failed
+        # host - exit.
+        run_stats = stats.Stats(
+            num_failures=1, num_unreachable=1,
+            failures=[], unreachable=[],
+            no_hosts_remaining=False)
+        self._test_run_playbooks_continue_on_unreachable(run_stats, SystemExit)
+
+    def test_run_playbooks_continue_on_unreachable_no_hosts_remaining(self):
+        # Execution did not reach the end 1 unreachable host and no failed
+        # hosts - exit.
+        run_stats = stats.Stats(
+            num_failures=0, num_unreachable=1,
+            failures=[], unreachable=[],
+            no_hosts_remaining=True)
+        self._test_run_playbooks_continue_on_unreachable(run_stats, SystemExit)
 
     @mock.patch.object(shutil, 'rmtree')
     @mock.patch.object(utils, 'read_config_dump_yaml_file')

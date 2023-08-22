@@ -146,3 +146,5 @@ Similarly, for Kolla Ansible (notice the similar but different file names):
    :caption: ``$KAYOBE_CONFIG_PATH/kolla/globals.yml``
 
    kolla_ansible_setup_gather_subset: "all,!facter"
+
+Or here?

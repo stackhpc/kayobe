@@ -17,7 +17,13 @@ import os
 import os.path
 import subprocess
 import sys
+import tempfile
+from typing import Optional
 
+import shutil
+
+from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -154,7 +160,7 @@ def build_args(parsed_args, command, inventory_filename, extra_vars=None,
     return cmd
 
 
-def _get_environment(parsed_args):
+def _get_environment(parsed_args, stats_path: Optional[str]):
     """Return an environment dict for executing Kolla Ansible."""
     env = os.environ.copy()
     vault.update_environment(parsed_args, env)
@@ -176,12 +182,14 @@ def _get_environment(parsed_args):
             env["EXTRA_OPTS"] += " --check"
         if parsed_args.diff and "--diff" not in extra_opts:
             env["EXTRA_OPTS"] += " --diff"
+    if stats_path:
+        env["ANSIBLE_KAYOBE_STATS_PATH"] = stats_path
     return env
 
 
 def run(parsed_args, command, inventory_filename, extra_vars=None,
         tags=None, quiet=False, verbose_level=None, extra_args=None,
-        limit=None):
+        limit=None, continue_on_unreachable=False):
     """Run a Kolla Ansible command."""
     _validate_args(parsed_args, inventory_filename)
     cmd = build_args(parsed_args, command,
@@ -190,12 +198,28 @@ def run(parsed_args, command, inventory_filename, extra_vars=None,
                      verbose_level=verbose_level,
                      extra_args=extra_args,
                      limit=limit)
-    env = _get_environment(parsed_args)
+    # TODO(mgoddard): Refactor to stats module?
+    stats_path: Optional[str] = None
+    if continue_on_unreachable:
+        stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
+    env = _get_environment(parsed_args, stats_path)
     try:
         utils.run_command(" ".join(cmd), quiet=quiet, shell=True, env=env)
     except subprocess.CalledProcessError as e:
         LOG.error("kolla-ansible %s exited %d", command, e.returncode)
+        if continue_on_unreachable:
+            # Allow to continue if execution reached the end without any
+            # failures.
+            run_stats = stats.Stats.from_json(stats_path)
+            if (run_stats.num_unreachable > 0 and
+                    run_stats.completed_without_failures()):
+                LOG.info(f"Continuing with {run_stats.num_unreachable} "
+                         "unreachable hosts")
+                raise exception.ContinueOnError(e.returncode, run_stats)
         sys.exit(e.returncode)
+    finally:
+        if stats_path:
+            shutil.rmtree(os.path.dirname(stats_path))
 
 
 def run_seed(*args, **kwargs):

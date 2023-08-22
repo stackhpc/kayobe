@@ -24,3 +24,4 @@ options.
    seed-custom-containers
    infra-vms
    nova-cells
+   failure-handling

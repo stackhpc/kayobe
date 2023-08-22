@@ -20,10 +20,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Optional
 
 from ansible.parsing.yaml.objects import AnsibleVaultEncryptedUnicode
 
 from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -216,7 +218,7 @@ def build_args(parsed_args, playbooks,
     return cmd
 
 
-def _get_environment(parsed_args):
+def _get_environment(parsed_args, stats_path: Optional[str]):
     """Return an environment dict for executing an Ansible playbook."""
     env = os.environ.copy()
     vault.update_environment(parsed_args, env)
@@ -232,13 +234,16 @@ def _get_environment(parsed_args):
     ansible_cfg_path = os.path.join(parsed_args.config_path, "ansible.cfg")
     if utils.is_readable_file(ansible_cfg_path)["result"]:
         env.setdefault("ANSIBLE_CONFIG", ansible_cfg_path)
+    if stats_path:
+        env["ANSIBLE_KAYOBE_STATS_PATH"] = stats_path
     return env
 
 
 def run_playbooks(parsed_args, playbooks,
                   extra_vars=None, limit=None, tags=None, quiet=False,
                   check_output=False, verbose_level=None, check=None,
-                  ignore_limit=False, list_tasks=None, diff=None):
+                  ignore_limit=False, list_tasks=None, diff=None,
+                  continue_on_unreachable=False):
     """Run a Kayobe Ansible playbook."""
     _validate_args(parsed_args, playbooks)
     cmd = build_args(parsed_args, playbooks,
@@ -246,7 +251,11 @@ def run_playbooks(parsed_args, playbooks,
                      verbose_level=verbose_level, check=check,
                      ignore_limit=ignore_limit, list_tasks=list_tasks,
                      diff=diff)
-    env = _get_environment(parsed_args)
+    # TODO(mgoddard): Refactor to stats module?
+    stats_path: Optional[str] = None
+    if continue_on_unreachable:
+        stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
+    env = _get_environment(parsed_args, stats_path)
     try:
         utils.run_command(cmd, check_output=check_output, quiet=quiet, env=env)
     except subprocess.CalledProcessError as e:
@@ -254,7 +263,19 @@ def run_playbooks(parsed_args, playbooks,
                   ", ".join(playbooks), e.returncode)
         if check_output:
             LOG.error("The output was:\n%s", e.output)
+        if continue_on_unreachable:
+            # Allow to continue if execution reached the end without any
+            # failures.
+            run_stats = stats.Stats.from_json(stats_path)
+            if (run_stats.num_unreachable > 0 and
+                    run_stats.completed_without_failures()):
+                LOG.info(f"Continuing with {run_stats.num_unreachable} "
+                         "unreachable hosts")
+                raise exception.ContinueOnError(e.returncode, run_stats)
         sys.exit(e.returncode)
+    finally:
+        if stats_path:
+            shutil.rmtree(os.path.dirname(stats_path))
 
 
 def run_playbook(parsed_args, playbook, *args, **kwargs):

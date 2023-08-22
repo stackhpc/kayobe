@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from kayobe import stats
+
 
 class KayobeException(Exception):
     """Base class for kayobe exceptions."""
@@ -19,3 +21,12 @@ class KayobeException(Exception):
 
 class Error(KayobeException):
     """Generic user error."""
+
+
+class ContinueOnError(KayobeException):
+    """Continue after some hosts are failed or unreachable."""
+
+    def __init__(self, exit_code: int, stats: stats.Stats):
+        super(ContinueOnError, self).__init__()
+        self.exit_code = exit_code
+        self.stats = stats
