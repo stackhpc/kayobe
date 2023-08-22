@@ -25,6 +25,7 @@ from unittest import mock
 
 from kayobe import ansible
 from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -408,9 +409,13 @@ class TestCase(unittest.TestCase):
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(ansible, "_get_vars_files")
     @mock.patch.object(ansible, "_validate_args")
-    def test_run_playbooks_func_args(self, mock_validate, mock_vars, mock_run):
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_playbooks_func_args(self, mock_rmtree, mock_mkdtemp,
+                                     mock_validate, mock_vars, mock_run):
         mock_vars.return_value = ["/etc/kayobe/vars-file1.yml",
                                   "/etc/kayobe/vars-file2.yaml"]
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
         parser = argparse.ArgumentParser()
         ansible.add_args(parser)
         vault.add_args(parser)
@@ -427,6 +432,7 @@ class TestCase(unittest.TestCase):
             "verbose_level": 0,
             "check": True,
             "diff": True,
+            "collect_stats": True,
         }
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"],
                               **kwargs)
@@ -452,10 +458,12 @@ class TestCase(unittest.TestCase):
             "ANSIBLE_ACTION_PLUGINS": mock.ANY,
             "ANSIBLE_FILTER_PLUGINS": mock.ANY,
             "ANSIBLE_TEST_PLUGINS": mock.ANY,
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json",
         }
         mock_run.assert_called_once_with(expected_cmd, check_output=False,
                                          quiet=False, env=expected_env)
         mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(ansible, "_get_vars_files")
@@ -607,8 +615,105 @@ class TestCase(unittest.TestCase):
         vault.add_args(parser)
         parsed_args = parser.parse_args([])
         mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
-        self.assertRaises(SystemExit,
-                          ansible.run_playbooks, parsed_args, ["command"])
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            ansible.run_playbooks(parsed_args, ["playbook1.yml"])
+        self.assertEqual(cm.exception.exit_code, 1)
+        expected_cmd = [
+            "ansible-playbook",
+            "--inventory", utils.get_data_files_path("ansible", "inventory"),
+            "--inventory", "/etc/kayobe/inventory",
+            "playbook1.yml",
+        ]
+        self.assertEqual(cm.exception.cmd, " ".join(expected_cmd))
+        self.assertIsNone(cm.exception.stats)
+
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(ansible, "_get_vars_files")
+    @mock.patch.object(ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_playbooks_collect_stats(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_vars, mock_run):
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = stats.Stats()
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
+
+        ansible.run_playbooks(parsed_args, ["playbook1.yml"],
+                              collect_stats=True)
+
+        expected_cmd = [
+            "ansible-playbook",
+            "--inventory", utils.get_data_files_path("ansible", "inventory"),
+            "--inventory", "/etc/kayobe/inventory",
+            "playbook1.yml",
+        ]
+        expected_env = {
+            "ANSIBLE_ALLOW_BROKEN_CONDITIONALS": "true",
+            "KAYOBE_CONFIG_PATH": "/etc/kayobe",
+            "ANSIBLE_ROLES_PATH": mock.ANY,
+            "ANSIBLE_COLLECTIONS_PATH": mock.ANY,
+            "ANSIBLE_ACTION_PLUGINS": mock.ANY,
+            "ANSIBLE_FILTER_PLUGINS": mock.ANY,
+            "ANSIBLE_TEST_PLUGINS": mock.ANY,
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+        mock_run.assert_called_once_with(expected_cmd, check_output=False,
+                                         quiet=False, env=expected_env)
+        mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
+
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(ansible, "_get_vars_files")
+    @mock.patch.object(ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_playbooks_collect_stats_error(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_vars, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = stats.Stats(failed_host_count=1)
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
+
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            ansible.run_playbooks(parsed_args, ["playbook1.yml"],
+                                  collect_stats=True)
+
+        expected_cmd = [
+            "ansible-playbook",
+            "--inventory", utils.get_data_files_path("ansible", "inventory"),
+            "--inventory", "/etc/kayobe/inventory",
+            "playbook1.yml",
+        ]
+        expected_env = {
+            "ANSIBLE_ALLOW_BROKEN_CONDITIONALS": "true",
+            "KAYOBE_CONFIG_PATH": "/etc/kayobe",
+            "ANSIBLE_ROLES_PATH": mock.ANY,
+            "ANSIBLE_COLLECTIONS_PATH": mock.ANY,
+            "ANSIBLE_ACTION_PLUGINS": mock.ANY,
+            "ANSIBLE_FILTER_PLUGINS": mock.ANY,
+            "ANSIBLE_TEST_PLUGINS": mock.ANY,
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+
+        self.assertEqual(cm.exception.exit_code, 1)
+        self.assertEqual(cm.exception.cmd, " ".join(expected_cmd))
+        self.assertEqual(cm.exception.stats.__dict__,
+                         stats.Stats(failed_host_count=1).__dict__)
+
+        mock_run.assert_called_once_with(expected_cmd, check_output=False,
+                                         quiet=False, env=expected_env)
+        mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
 
     @mock.patch.object(shutil, 'rmtree')
     @mock.patch.object(utils, 'read_config_dump_yaml_file')

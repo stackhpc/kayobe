@@ -20,10 +20,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Optional
 
 from ansible.parsing.yaml.objects import AnsibleVaultEncryptedUnicode
 
 from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -218,7 +220,8 @@ def build_args(parsed_args, playbooks,
     return cmd
 
 
-def _get_environment(parsed_args, external_playbook=False):
+def _get_environment(parsed_args, stats_path: Optional[str],
+                     external_playbook=False):
     """Return an environment dict for executing an Ansible playbook."""
     env = os.environ.copy()
     vault.update_environment(parsed_args, env)
@@ -303,13 +306,16 @@ def _get_environment(parsed_args, external_playbook=False):
 
     env.setdefault("ANSIBLE_TEST_PLUGINS", ":".join(test_plugins))
 
+    if stats_path:
+        env["ANSIBLE_KOLLA_STATS_PATH"] = stats_path
     return env
 
 
 def run_playbooks(parsed_args, playbooks,
                   extra_vars=None, limit=None, tags=None, quiet=False,
                   check_output=False, verbose_level=None, check=None,
-                  ignore_limit=False, list_tasks=None, diff=None):
+                  ignore_limit=False, list_tasks=None, diff=None,
+                  collect_stats=False):
     """Run a Kayobe Ansible playbook."""
     _validate_args(parsed_args, playbooks)
     cmd = build_args(parsed_args, playbooks,
@@ -322,7 +328,13 @@ def run_playbooks(parsed_args, playbooks,
     if not first_playbook.startswith(os.path.realpath(
             utils.get_data_files_path("ansible"))):
         external_playbook = True
-    env = _get_environment(parsed_args, external_playbook)
+
+    stats_path: Optional[str] = None
+    if collect_stats:
+        stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
+
+    env = _get_environment(parsed_args, stats_path, external_playbook)
+
     try:
         utils.run_command(cmd, check_output=check_output, quiet=quiet, env=env)
     except subprocess.CalledProcessError as e:
@@ -330,7 +342,14 @@ def run_playbooks(parsed_args, playbooks,
                   ", ".join(playbooks), e.returncode)
         if check_output:
             LOG.error("The output was:\n%s", e.output)
-        sys.exit(e.returncode)
+        run_stats = None
+        if collect_stats:
+            run_stats = stats.Stats.from_json(stats_path)
+        raise exception.AnsibleCommandError(" ".join(cmd), e.returncode,
+                                            run_stats)
+    finally:
+        if stats_path:
+            shutil.rmtree(os.path.dirname(stats_path))
 
 
 def run_playbook(parsed_args, playbook, *args, **kwargs):

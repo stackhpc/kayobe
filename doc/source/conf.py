@@ -121,6 +121,7 @@ openstackdocs_pdf_link = True
 openstackdocs_auto_name = False
 
 openstackdocs_projects = [
+    'ansible-collection-kolla',
     'bifrost',
     'diskimage-builder',
     'ironic',

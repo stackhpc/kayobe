@@ -1,8 +1,8 @@
 ---
 collections:
-  - name: https://github.com/openstack/ansible-collection-kolla
+  - name: https://github.com/stackhpc/ansible-collection-kolla
     type: git
-    version: stable/2025.1
+    version: 2025.1-continue-on-unreachable
   - name: community.docker
     version: 3.11.0
   - name: dellemc.os10

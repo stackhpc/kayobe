@@ -12,17 +12,22 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import argparse
 import glob
 import json
 import os
 import re
 import sys
+import textwrap
 
-from cliff.command import Command
+from cliff.command import Command as CliffCommand
 from cliff.hooks import CommandHook
+import colorama
+import yaml
 
 from kayobe import ansible
 from kayobe import environment
+from kayobe import exception
 from kayobe import kolla_ansible
 from kayobe import utils
 from kayobe import vault
@@ -42,6 +47,98 @@ def _build_playbook_list(*playbooks):
 def _get_playbook_path(playbook):
     """Return the absolute path of a playbook"""
     return utils.get_data_files_path("ansible", "%s.yml" % playbook)
+
+
+def continue_on_unreachable(parsed_args: argparse.Namespace,
+                            fatal: bool) -> bool:
+    """Return whether to continue execution with unreachable hosts."""
+    return (not fatal and
+            getattr(parsed_args, "continue_on_unreachable", False))
+
+
+def catch_non_fatal_errors(func):
+    """Decorator to catch and record non-fatal errors.
+
+    Non-fatal errors are signalled by the AnsibleCommandError exception. This
+    decorator catches them and appends them to the non_fatal_errors list.
+    """
+    def wrapper(self, parsed_args, *args, **kwargs):
+        try:
+            return func(self, parsed_args, *args, **kwargs)
+        except exception.AnsibleCommandError as e:
+            # Allow to continue non-fatal commands if execution reached the end
+            # without any failures.
+            fatal = kwargs.get('fatal', True)
+            if (continue_on_unreachable(parsed_args, fatal) and
+                    e.stats and
+                    e.stats.unreachable_host_count > 0 and
+                    e.stats.completed_without_failures()):
+                self.app.LOG.error("Hit a non-fatal error!")
+                self.app.LOG.info("Continuing with "
+                                  f"{e.stats.unreachable_host_count} "
+                                  "unreachable hosts")
+                self.non_fatal_errors.append(e)
+            else:
+                sys.exit(e.exit_code)
+    return wrapper
+
+
+class Command(CliffCommand):
+    """Base class for Kayobe commands."""
+
+    def __init__(self, app, app_args, cmd_name=None):
+        super(Command, self).__init__(app, app_args, cmd_name)
+        self.non_fatal_errors = []
+
+    @staticmethod
+    def add_continue_on_unreachable_args(group):
+        """Add a CLI argument for continuing on unreachable hosts.
+
+        :param group: The argument group to add the argument to.
+        """
+        group.add_argument("--continue-on-unreachable", action='store_true',
+                           help="whether to continue execution when some "
+                                "hosts are unreachable")
+
+    def handle_non_fatal_errors(self, return_code):
+        """Handle and report any non-fatal errors.
+
+        :param return_code: The return code from the last command.
+        :returns: An updated return code accounting for non-fatal errors.
+        """
+        if not self.non_fatal_errors:
+            return return_code
+
+        yellow = colorama.Fore.YELLOW
+        colorama.init(autoreset=True)
+        if return_code:
+            red = colorama.Fore.RED
+            self.app.LOG.error(f"{red}Failing due to fatal error. The "
+                               "following non-fatal errors were also "
+                               "encountered:")
+        else:
+            self.app.LOG.error(f"{yellow}All commands completed but one or "
+                               "more non-fatal errors were also encountered:")
+            # Ansible uses the following return codes:
+            # 0: ok
+            # 1: error
+            # 2: failed hosts
+            # 4: unreachable hosts
+            # 255: unknown error
+            # So let's OR 32 with the other return codes to indicate a
+            # non-fatal error.
+            return_code |= 32
+        for index, error in enumerate(self.non_fatal_errors):
+            stats = yaml.dump(error.stats.__dict__, default_flow_style=False)
+            self.app.LOG.error(f"{yellow}Non-fatal error {index + 1}:")
+            self.app.LOG.error(f"{yellow}  Exit code: {error.exit_code}")
+            self.app.LOG.error(f"{yellow}  Command: {error.cmd}")
+            self.app.LOG.error(f"{yellow}  Stats:")
+            self.app.LOG.error(textwrap.indent(stats, "    "))
+            return_code |= error.exit_code
+        assert return_code != 0, ("Expected non-zero exit code when "
+                                  "continuing after non-fatal errors")
+        return return_code
 
 
 class VaultMixin(object):
@@ -77,17 +174,26 @@ class KayobeAnsibleMixin(object):
             verbosity_args["quiet"] = True
         return verbosity_args
 
-    def run_kayobe_playbooks(self, parsed_args, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kayobe_playbooks(self, parsed_args, *args, fatal=True,
+                             **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return ansible.run_playbooks(parsed_args, *args, **kwargs)
+        cou = continue_on_unreachable(parsed_args, fatal)
+        return ansible.run_playbooks(
+            parsed_args, collect_stats=cou, *args, **kwargs)
 
-    def run_kayobe_playbook(self, parsed_args, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kayobe_playbook(self, parsed_args, *args, fatal=True,
+                            **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return ansible.run_playbook(parsed_args, *args, **kwargs)
+        cou = continue_on_unreachable(parsed_args, fatal)
+        return ansible.run_playbook(
+            parsed_args, collect_stats=cou, *args, **kwargs)
 
-    def run_kayobe_config_dump(self, parsed_args, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kayobe_config_dump(self, *args, **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return ansible.config_dump(parsed_args, *args, **kwargs)
+        return ansible.config_dump(*args, **kwargs)
 
     def generate_kolla_ansible_config(self, parsed_args, install=False,
                                       service_config=True,
@@ -139,14 +245,23 @@ class KollaAnsibleMixin(object):
             verbosity_args["quiet"] = True
         return verbosity_args
 
-    def run_kolla_ansible(self, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kolla_ansible(self, parsed_args, *args, fatal=True,
+                          **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return kolla_ansible.run(*args, **kwargs)
+        cou = continue_on_unreachable(parsed_args, fatal)
+        return kolla_ansible.run(
+            parsed_args, *args, collect_stats=cou, **kwargs)
 
-    def run_kolla_ansible_overcloud(self, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kolla_ansible_overcloud(self, parsed_args, *args,
+                                    fatal=True, **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return kolla_ansible.run_overcloud(*args, **kwargs)
+        cou = continue_on_unreachable(parsed_args, fatal)
+        return kolla_ansible.run_overcloud(
+            parsed_args, *args, collect_stats=cou, **kwargs)
 
+    @catch_non_fatal_errors
     def run_kolla_ansible_seed(self, *args, **kwargs):
         kwargs.update(self._get_verbosity_args())
         return kolla_ansible.run_seed(*args, **kwargs)
@@ -250,6 +365,7 @@ class HookDispatcher(CommandHook):
         return parsed_args
 
     def after(self, parsed_args, return_code):
+        return_code = self.command.handle_non_fatal_errors(return_code)
         if return_code == 0:
             self.run_hooks(parsed_args, "post")
         else:
@@ -378,9 +494,16 @@ class PlaybookRun(KayobeAnsibleMixin, VaultMixin, Command):
         group.add_argument("playbook", nargs="+",
                            help="name of the playbook(s) to run")
 
+    def get_parser(self, prog_name):
+        parser = super(PlaybookRun, self).get_parser(prog_name)
+        group = parser.add_argument_group("Playbook Run")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Running Kayobe playbook(s)")
-        self.run_kayobe_playbooks(parsed_args, parsed_args.playbook)
+        self.run_kayobe_playbooks(parsed_args, parsed_args.playbook,
+                                  fatal=False)
 
 
 class KollaAnsibleRun(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
@@ -400,6 +523,12 @@ class KollaAnsibleRun(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
         group.add_argument("command",
                            help="name of the kolla-ansible command to run")
 
+    def get_parser(self, prog_name):
+        parser = super(KollaAnsibleRun, self).get_parser(prog_name)
+        group = parser.add_argument_group("Kolla Ansible Run")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Running Kolla Ansible command")
 
@@ -408,7 +537,8 @@ class KollaAnsibleRun(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Run the kolla-ansible command.
         self.run_kolla_ansible(parsed_args, parsed_args.command,
-                               parsed_args.kolla_inventory_filename)
+                               parsed_args.kolla_inventory_filename,
+                               fatal=False)
 
 
 class PhysicalNetworkConfigure(KayobeAnsibleMixin, VaultMixin, Command):
@@ -429,6 +559,7 @@ class PhysicalNetworkConfigure(KayobeAnsibleMixin, VaultMixin, Command):
         group.add_argument("--interface-description-limit",
                            help="limit the switch interfaces to be configured "
                                 "by interface description")
+        self.add_continue_on_unreachable_args(group)
         discovery = parser.add_mutually_exclusive_group()
         discovery.add_argument("--enable-discovery", action="store_true",
                                help="configure the network for hardware "
@@ -455,7 +586,7 @@ class PhysicalNetworkConfigure(KayobeAnsibleMixin, VaultMixin, Command):
         self.run_kayobe_playbook(parsed_args,
                                  _get_playbook_path('physical-network'),
                                  limit=parsed_args.group,
-                                 extra_vars=extra_vars)
+                                 extra_vars=extra_vars, fatal=False)
 
 
 class SeedHypervisorHostConfigure(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1175,16 +1306,23 @@ class OvercloudFactsGather(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
                            Command):
     """Gather facts for Kayobe and Kolla Ansible."""
 
+    def get_parser(self, prog_name):
+        parser = super(OvercloudFactsGather, self).get_parser(prog_name)
+        group = parser.add_argument_group("Fact gathering")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Gathering overcloud host facts")
 
         # Gather facts for Kayobe.
         playbooks = _build_playbook_list("overcloud-facts-gather")
-        self.run_kayobe_playbooks(parsed_args, playbooks)
+        self.run_kayobe_playbooks(parsed_args, playbooks, fatal=False)
 
         # Gather facts for Kolla Ansible.
         self.generate_kolla_ansible_config(parsed_args, service_config=False)
-        self.run_kolla_ansible_overcloud(parsed_args, "gather-facts")
+        self.run_kolla_ansible_overcloud(parsed_args, "gather-facts",
+                                         fatal=False)
 
 
 class OvercloudHostConfigure(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1222,6 +1360,7 @@ class OvercloudHostConfigure(KayobeAnsibleMixin, VaultMixin, Command):
                            help="wipe partition and LVM data from all disks "
                                 "that are not mounted. Warning: this can "
                                 "result in the loss of data")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1237,7 +1376,7 @@ class OvercloudHostConfigure(KayobeAnsibleMixin, VaultMixin, Command):
             kwargs["extra_vars"] = {"wipe_disks": True}
         playbooks = _build_playbook_list("overcloud-host-configure")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
-                                  **kwargs)
+                                  fatal=False, **kwargs)
 
 
 class OvercloudHostPackageUpdate(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1252,6 +1391,7 @@ class OvercloudHostPackageUpdate(KayobeAnsibleMixin, VaultMixin, Command):
         group.add_argument("--security", action='store_true',
                            help="Only install updates that have been marked "
                                 "security related.")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1262,7 +1402,7 @@ class OvercloudHostPackageUpdate(KayobeAnsibleMixin, VaultMixin, Command):
         }
         playbooks = _build_playbook_list("host-package-update")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
-                                  extra_vars=extra_vars)
+                                  extra_vars=extra_vars, fatal=False)
 
 
 class OvercloudHostCommandRun(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1275,6 +1415,7 @@ class OvercloudHostCommandRun(KayobeAnsibleMixin, VaultMixin, Command):
                            help="Command to run (required).")
         group.add_argument("--show-output", action='store_true',
                            help="Show command output")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1284,7 +1425,7 @@ class OvercloudHostCommandRun(KayobeAnsibleMixin, VaultMixin, Command):
             "show_output": parsed_args.show_output}
         playbooks = _build_playbook_list("host-command-run")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
-                                  extra_vars=extra_vars)
+                                  extra_vars=extra_vars, fatal=False)
 
 
 class OvercloudHostUpgrade(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1294,10 +1435,17 @@ class OvercloudHostUpgrade(KayobeAnsibleMixin, VaultMixin, Command):
     configured OpenStack release.
     """
 
+    def get_parser(self, prog_name):
+        parser = super(OvercloudHostUpgrade, self).get_parser(prog_name)
+        group = parser.add_argument_group("Overcloud Host Upgrade")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Upgrading overcloud host services")
         playbooks = _build_playbook_list("overcloud-host-upgrade")
-        self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud")
+        self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
+                                  fatal=False)
 
 
 class OvercloudDatabaseBackup(KollaAnsibleMixin, KayobeAnsibleMixin,
@@ -1375,6 +1523,7 @@ class OvercloudServiceConfigurationGenerate(KayobeAnsibleMixin,
                                 "the remote node (required)")
         group.add_argument("--skip-prechecks", action='store_true',
                            help="skip the kolla-ansible prechecks command")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1385,14 +1534,16 @@ class OvercloudServiceConfigurationGenerate(KayobeAnsibleMixin,
 
         # Run kolla-ansible prechecks before deployment.
         if not parsed_args.skip_prechecks:
-            self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+            self.run_kolla_ansible_overcloud(parsed_args, "prechecks",
+                                             fatal=False)
 
         # Generate the configuration.
         extra_vars = {}
         if parsed_args.node_config_dir:
             extra_vars["node_config_directory"] = parsed_args.node_config_dir
         self.run_kolla_ansible_overcloud(parsed_args, "genconfig",
-                                         extra_vars=extra_vars)
+                                         extra_vars=extra_vars,
+                                         fatal=False)
 
 
 class OvercloudServiceConfigurationValidate(KayobeAnsibleMixin,
@@ -1445,6 +1596,7 @@ class OvercloudServiceConfigurationSave(KayobeAnsibleMixin, VaultMixin,
         group.add_argument("--output-dir",
                            help="path to a directory in which to save "
                                 "configuration")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1460,7 +1612,7 @@ class OvercloudServiceConfigurationSave(KayobeAnsibleMixin, VaultMixin,
         if parsed_args.node_config_dir:
             extra_vars["node_config_directory"] = parsed_args.node_config_dir
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars)
+                                  extra_vars=extra_vars, fatal=False)
 
 
 class OvercloudServiceDeploy(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
@@ -1484,6 +1636,7 @@ class OvercloudServiceDeploy(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
         group = parser.add_argument_group("Service Deployment")
         group.add_argument("--skip-prechecks", action='store_true',
                            help="skip the kolla-ansible prechecks command")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1494,19 +1647,23 @@ class OvercloudServiceDeploy(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
 
         # Run kolla-ansible prechecks before deployment.
         if not parsed_args.skip_prechecks:
-            self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+            self.run_kolla_ansible_overcloud(parsed_args, "prechecks",
+                                             fatal=False)
 
         # Perform the kolla-ansible deployment.
-        self.run_kolla_ansible_overcloud(parsed_args, "deploy")
+        self.run_kolla_ansible_overcloud(parsed_args, "deploy",
+                                         fatal=False)
 
         # Deploy kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "deploy"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
         # Post-deployment configuration.
         self.run_kolla_ansible_overcloud(parsed_args, "post-deploy")
+
         # Create an environment file for accessing the public API as the admin
         # user.
         playbooks = _build_playbook_list("public-openrc")
@@ -1534,6 +1691,7 @@ class OvercloudServiceDeployContainers(KollaAnsibleMixin, KayobeAnsibleMixin,
         group = parser.add_argument_group("Service Deployment")
         group.add_argument("--skip-prechecks", action='store_true',
                            help="skip the kolla-ansible prechecks command")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1544,16 +1702,19 @@ class OvercloudServiceDeployContainers(KollaAnsibleMixin, KayobeAnsibleMixin,
 
         # Run kolla-ansible prechecks before deployment.
         if not parsed_args.skip_prechecks:
-            self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+            self.run_kolla_ansible_overcloud(parsed_args, "prechecks",
+                                             fatal=False)
 
         # Perform the kolla-ansible deployment.
-        self.run_kolla_ansible_overcloud(parsed_args, "manage-containers")
+        self.run_kolla_ansible_overcloud(parsed_args, "manage-containers",
+                                         fatal=False)
 
         # Deploy kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "deploy"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
 
 class OvercloudServicePrechecks(KollaAnsibleMixin, KayobeAnsibleMixin,
@@ -1569,6 +1730,12 @@ class OvercloudServicePrechecks(KollaAnsibleMixin, KayobeAnsibleMixin,
     to check specific services.
     """
 
+    def get_parser(self, prog_name):
+        parser = super(OvercloudServicePrechecks, self).get_parser(prog_name)
+        group = parser.add_argument_group("Service Prechecks")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Running overcloud prechecks")
 
@@ -1576,7 +1743,7 @@ class OvercloudServicePrechecks(KollaAnsibleMixin, KayobeAnsibleMixin,
         self.generate_kolla_ansible_config(parsed_args)
 
         # Run the kolla-ansible prechecks.
-        self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+        self.run_kolla_ansible_overcloud(parsed_args, "prechecks", fatal=False)
 
 
 class OvercloudServiceReconfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
@@ -1600,6 +1767,7 @@ class OvercloudServiceReconfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
         group = parser.add_argument_group("Service Reconfiguration")
         group.add_argument("--skip-prechecks", action='store_true',
                            help="skip the kolla-ansible prechecks command")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1610,16 +1778,19 @@ class OvercloudServiceReconfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
 
         # Run kolla-ansible prechecks before reconfiguration.
         if not parsed_args.skip_prechecks:
-            self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+            self.run_kolla_ansible_overcloud(parsed_args, "prechecks",
+                                             fatal=False)
 
         # Perform the kolla-ansible reconfiguration.
-        self.run_kolla_ansible_overcloud(parsed_args, "reconfigure")
+        self.run_kolla_ansible_overcloud(parsed_args, "reconfigure",
+                                         fatal=False)
 
         # Reconfigure kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "reconfigure"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
         # Post-deployment configuration.
         self.run_kolla_ansible_overcloud(parsed_args, "post-deploy")
@@ -1649,6 +1820,7 @@ class OvercloudServiceStop(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
                            action='store_true',
                            help="confirm that you understand that this will "
                                 "stop running services.")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1666,13 +1838,15 @@ class OvercloudServiceStop(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
         # Perform the kolla-ansible stop.
         extra_args = ["--yes-i-really-really-mean-it"]
         self.run_kolla_ansible_overcloud(parsed_args, "stop",
-                                         extra_args=extra_args)
+                                         extra_args=extra_args,
+                                         fatal=False)
 
         # Stop kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "stop"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
 
 class OvercloudServiceUpgrade(KollaAnsibleMixin, KayobeAnsibleMixin,
@@ -1696,6 +1870,7 @@ class OvercloudServiceUpgrade(KollaAnsibleMixin, KayobeAnsibleMixin,
         group = parser.add_argument_group("Service Upgrade")
         group.add_argument("--skip-prechecks", action='store_true',
                            help="skip the kolla-ansible prechecks command")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1706,16 +1881,19 @@ class OvercloudServiceUpgrade(KollaAnsibleMixin, KayobeAnsibleMixin,
 
         # Run kolla-ansible prechecks before upgrade.
         if not parsed_args.skip_prechecks:
-            self.run_kolla_ansible_overcloud(parsed_args, "prechecks")
+            self.run_kolla_ansible_overcloud(parsed_args, "prechecks",
+                                             fatal=False)
 
         # Perform the kolla-ansible upgrade.
-        self.run_kolla_ansible_overcloud(parsed_args, "upgrade")
+        self.run_kolla_ansible_overcloud(parsed_args, "upgrade",
+                                         fatal=False)
 
         # Upgrade kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "upgrade"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
         # Post-deployment configuration.
         self.run_kolla_ansible_overcloud(parsed_args, "post-deploy")
@@ -1740,6 +1918,7 @@ class OvercloudServiceDestroy(KollaAnsibleMixin, KayobeAnsibleMixin,
                            action='store_true',
                            help="confirm that you understand that this will "
                                 "permantently destroy all services and data.")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1758,18 +1937,26 @@ class OvercloudServiceDestroy(KollaAnsibleMixin, KayobeAnsibleMixin,
         # Run kolla-ansible destroy.
         extra_args = ["--yes-i-really-really-mean-it"]
         self.run_kolla_ansible_overcloud(parsed_args, "destroy",
-                                         extra_args=extra_args)
+                                         extra_args=extra_args,
+                                         fatal=False)
 
         # Destroy kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "destroy"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
 
 class OvercloudContainerImagePull(KayobeAnsibleMixin, KollaAnsibleMixin,
                                   VaultMixin, Command):
     """Pull the overcloud container images from a registry."""
+
+    def get_parser(self, prog_name):
+        parser = super(OvercloudContainerImagePull, self).get_parser(prog_name)
+        group = parser.add_argument_group("Container image pull")
+        self.add_continue_on_unreachable_args(group)
+        return parser
 
     def take_action(self, parsed_args):
         self.app.LOG.debug("Pulling overcloud container images")
@@ -1778,13 +1965,14 @@ class OvercloudContainerImagePull(KayobeAnsibleMixin, KollaAnsibleMixin,
         self.generate_kolla_ansible_config(parsed_args, service_config=False)
 
         # Pull updated kolla container images.
-        self.run_kolla_ansible_overcloud(parsed_args, "pull")
+        self.run_kolla_ansible_overcloud(parsed_args, "pull", fatal=False)
 
         # Pull container images for kayobe extra services.
         playbooks = _build_playbook_list("overcloud-extras")
         extra_vars = {"kayobe_action": "pull"}
         self.run_kayobe_playbooks(parsed_args, playbooks,
-                                  extra_vars=extra_vars, limit="overcloud")
+                                  extra_vars=extra_vars, limit="overcloud",
+                                  fatal=False)
 
 
 class OvercloudContainerImageBuild(KayobeAnsibleMixin, VaultMixin, Command):
@@ -1906,10 +2094,16 @@ class NetworkConnectivityCheck(KayobeAnsibleMixin, VaultMixin, Command):
     each network is validated by sending ping packets of maximum size.
     """
 
+    def get_parser(self, prog_name):
+        parser = super(NetworkConnectivityCheck, self).get_parser(prog_name)
+        group = parser.add_argument_group("Network Connectivity Check")
+        self.add_continue_on_unreachable_args(group)
+        return parser
+
     def take_action(self, parsed_args):
         self.app.LOG.debug("Performing network connectivity check")
         playbooks = _build_playbook_list("network-connectivity")
-        self.run_kayobe_playbooks(parsed_args, playbooks)
+        self.run_kayobe_playbooks(parsed_args, playbooks, fatal=False)
 
 
 class BaremetalComputeRegister(KayobeAnsibleMixin, VaultMixin, Command):

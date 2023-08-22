@@ -14,12 +14,16 @@
 
 import argparse
 import os
+import shutil
 import subprocess
+import tempfile
 import unittest
 from unittest import mock
 
 from kayobe import ansible
+from kayobe import exception
 from kayobe import kolla_ansible
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -187,7 +191,11 @@ class TestCase(unittest.TestCase):
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(kolla_ansible, "_validate_args")
-    def test_run_func_args(self, mock_validate, mock_run):
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_func_args(self, mock_rmtree, mock_mkdtemp, mock_validate,
+                           mock_run):
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
         parser = argparse.ArgumentParser()
         ansible.add_args(parser)
         kolla_ansible.add_args(parser)
@@ -202,6 +210,7 @@ class TestCase(unittest.TestCase):
             "tags": "tag3,tag4",
             "verbose_level": 1,
             "extra_args": ["--arg1", "--arg2"],
+            "collect_stats": True,
         }
         kolla_ansible.run(parsed_args, "command", "overcloud", **kwargs)
         expected_cmd = [
@@ -215,8 +224,11 @@ class TestCase(unittest.TestCase):
             "--arg1", "--arg2",
         ]
         expected_cmd = " ".join(expected_cmd)
+        expected_env = {
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
         mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
-                                         env={})
+                                         env=expected_env)
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(utils, "is_readable_file")
@@ -335,6 +347,81 @@ class TestCase(unittest.TestCase):
         vault.add_args(parser)
         parsed_args = parser.parse_args([])
         mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
-        self.assertRaises(SystemExit,
-                          kolla_ansible.run, parsed_args, "command",
-                          "overcloud")
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            kolla_ansible.run(parsed_args, "command", "overcloud")
+        self.assertEqual(cm.exception.exit_code, 1)
+        expected_cmd = ("kolla-ansible command --inventory "
+                        "/etc/kolla/inventory/overcloud")
+        self.assertEqual(cm.exception.cmd, expected_cmd)
+        self.assertIsNone(cm.exception.stats)
+
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(kolla_ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_collect_stats(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_run):
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = stats.Stats()
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        kolla_ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
+        kolla_ansible.run(parsed_args, "command", "overcloud",
+                          collect_stats=True)
+
+        expected_cmd = [
+            ".", "/path/to/cwd/venvs/kolla-ansible/bin/activate", "&&",
+            "kolla-ansible", "command",
+            "--inventory", "/etc/kolla/inventory/overcloud",
+        ]
+        expected_cmd = " ".join(expected_cmd)
+        expected_env = {
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+        mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
+                                         env=expected_env)
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
+
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(kolla_ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_collect_stats_error(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = stats.Stats(failed_host_count=1)
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        kolla_ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            kolla_ansible.run(parsed_args, "command", "overcloud",
+                              collect_stats=True)
+
+        self.assertEqual(cm.exception.exit_code, 1)
+        expected_cmd = ("kolla-ansible command --inventory "
+                        "/etc/kolla/inventory/overcloud")
+        self.assertEqual(cm.exception.cmd, expected_cmd)
+        self.assertEqual(cm.exception.stats.__dict__,
+                         stats.Stats(failed_host_count=1).__dict__)
+
+        expected_cmd = [
+            ".", "/path/to/cwd/venvs/kolla-ansible/bin/activate", "&&",
+            "kolla-ansible", "command",
+            "--inventory", "/etc/kolla/inventory/overcloud",
+        ]
+        expected_cmd = " ".join(expected_cmd)
+        expected_env = {
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+        mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
+                                         env=expected_env)
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")

@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from typing import Optional
+
+from kayobe import stats
+
 
 class KayobeException(Exception):
     """Base class for kayobe exceptions."""
@@ -19,3 +23,13 @@ class KayobeException(Exception):
 
 class Error(KayobeException):
     """Generic user error."""
+
+
+class AnsibleCommandError(KayobeException):
+    """Hit an error while executing an Ansible command."""
+
+    def __init__(self, cmd: str, exit_code: int, stats: Optional[stats.Stats]):
+        super(AnsibleCommandError, self).__init__()
+        self.cmd = cmd
+        self.exit_code = exit_code
+        self.stats = stats

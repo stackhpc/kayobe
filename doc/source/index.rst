@@ -50,6 +50,7 @@ Advanced Documentation
    control-plane-service-placement
    custom-ansible-playbooks
    multiple-environments
+   failure-handling
 
 Contributor Guide
 -----------------

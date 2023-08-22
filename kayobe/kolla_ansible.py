@@ -17,7 +17,13 @@ import os
 import os.path
 import subprocess
 import sys
+import tempfile
+from typing import Optional
 
+import shutil
+
+from kayobe import exception
+from kayobe import stats
 from kayobe import utils
 from kayobe import vault
 
@@ -181,7 +187,7 @@ def build_args(parsed_args, command, inventory_filename, extra_vars=None,
     return cmd
 
 
-def _get_environment(parsed_args):
+def _get_environment(parsed_args, stats_path: Optional[str]):
     """Return an environment dict for executing Kolla Ansible."""
     env = os.environ.copy()
     vault.update_environment(parsed_args, env)
@@ -195,12 +201,14 @@ def _get_environment(parsed_args):
         ansible_cfg_path = os.path.join(parsed_args.config_path, "ansible.cfg")
         if utils.is_readable_file(ansible_cfg_path)["result"]:
             env.setdefault("ANSIBLE_CONFIG", ansible_cfg_path)
+    if stats_path:
+        env["ANSIBLE_KOLLA_STATS_PATH"] = stats_path
     return env
 
 
 def run(parsed_args, command, inventory_filename, extra_vars=None,
         tags=None, quiet=False, verbose_level=None, extra_args=None,
-        limit=None):
+        limit=None, collect_stats=False):
     """Run a Kolla Ansible command."""
     _validate_args(parsed_args, inventory_filename)
     cmd = build_args(parsed_args, command,
@@ -209,12 +217,22 @@ def run(parsed_args, command, inventory_filename, extra_vars=None,
                      verbose_level=verbose_level,
                      extra_args=extra_args,
                      limit=limit)
-    env = _get_environment(parsed_args)
+    stats_path: Optional[str] = None
+    if collect_stats:
+        stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
+    env = _get_environment(parsed_args, stats_path)
     try:
         utils.run_command(" ".join(cmd), quiet=quiet, shell=True, env=env)
     except subprocess.CalledProcessError as e:
         LOG.error("kolla-ansible %s exited %d", command, e.returncode)
-        sys.exit(e.returncode)
+        run_stats = None
+        if collect_stats:
+            run_stats = stats.Stats.from_json(stats_path)
+        raise exception.AnsibleCommandError(" ".join(cmd[3:]),
+                                            e.returncode, run_stats)
+    finally:
+        if stats_path:
+            shutil.rmtree(os.path.dirname(stats_path))
 
 
 def run_seed(*args, **kwargs):
