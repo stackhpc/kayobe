@@ -6,7 +6,7 @@
   version: 56daf0017783bd4fa5722da4ee91b66ddd4e6b6a
 - src: MichaelRigart.interfaces
   version: v1.9.2
-- src: mrlesmithjr.manage-lvm
+- src: mrlesmithjr.manage_lvm
   version: v0.1.4
 - src: mrlesmithjr.mdadm
   version: v0.1.0
