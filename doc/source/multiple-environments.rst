@@ -185,6 +185,7 @@ and shared configuration file content for the following subset of the files:
 * ``kolla/config/bifrost/servers.yml``
 * ``kolla/globals.yml``
 * ``kolla/kolla-build.conf``
+* ``kolla/repos.yml`` or ``kolla/repos.yaml``
 
 The Antelope release expands upon this list to add support for combining custom
 kolla configs. This behaviour is configured using two variables:
