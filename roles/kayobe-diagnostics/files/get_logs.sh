@@ -33,8 +33,12 @@ copy_logs() {
         rm ${LOG_DIR}/previous_kayobe_configs/kolla/config/ironic/ironic-agent.{kernel,initramfs}
         rm ${LOG_DIR}/previous_kolla_configs/config/ironic/ironic-agent.{kernel,initramfs}
     fi
-    cp -rvnL /var/log/* ${LOG_DIR}/system_logs/
 
+    if [[ -d /opt/kayobe/etc/kolla ]]; then
+        cp -rnL /opt/kayobe/etc/kolla/* ${LOG_DIR}/kolla_build_configs/
+    fi
+
+    cp -rvnL /var/log/* ${LOG_DIR}/system_logs/
 
     if [[ -x "$(command -v journalctl)" ]]; then
         journalctl --no-pager > ${LOG_DIR}/system_logs/syslog.txt
@@ -61,6 +65,10 @@ copy_logs() {
         cp -r /etc/apt/sources.list.d/ ${LOG_DIR}/system_logs/
     fi
 
+    if [[ -d /etc/systemd/ ]]; then
+        cp -rL /etc/systemd/ ${LOG_DIR}/system_logs/
+    fi
+
     df -h > ${LOG_DIR}/system_logs/df.txt
     # Gather disk usage statistics for files and directories larger than 1MB
     du -d 5 -hx / | sort -hr | grep '^[0-9\.]*[MGT]' > ${LOG_DIR}/system_logs/du.txt
@@ -71,6 +79,8 @@ copy_logs() {
     env > ${LOG_DIR}/system_logs/env.txt
     ip address > ${LOG_DIR}/system_logs/ip-address.txt
     ip route > ${LOG_DIR}/system_logs/ip-route.txt
+    ip route show table all > ${LOG_DIR}/system_logs/ip-route-all-tables.txt
+    ip rule list > ${LOG_DIR}/system_logs/ip-rule-list.txt
 
     iptables-save > ${LOG_DIR}/system_logs/iptables.txt
 

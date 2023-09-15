@@ -863,7 +863,6 @@ class TestCase(unittest.TestCase):
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"])
         expected_cmd = [
             "ansible-playbook",
-            "--inventory", utils.get_data_files_path("ansible", "inventory"),
             "--inventory", "/etc/kayobe/environments/dependency-env/inventory",
             "--inventory", "/etc/kayobe/environments/test-env/inventory",
             "playbook1.yml",
@@ -930,7 +929,6 @@ class TestCase(unittest.TestCase):
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"])
         expected_cmd = [
             "ansible-playbook",
-            "--inventory", utils.get_data_files_path("ansible", "inventory"),
             "--inventory", "/etc/kayobe/environments/dependency-env/inventory",
             "--inventory", "/etc/kayobe/environments/test-env/inventory",
             '-e', '@vars-1.yml',

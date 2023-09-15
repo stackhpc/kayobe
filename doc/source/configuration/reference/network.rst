@@ -343,6 +343,9 @@ The following attributes are supported:
 
 ``interface``
     The name of the network interface attached to the network.
+``parent``
+    The name of the parent interface, when configuring a VLAN interface using
+    ``systemd-networkd`` syntax.
 ``bootproto``
     Boot protocol for the interface. Valid values are ``static`` and ``dhcp``.
     The default is ``static``. When set to ``dhcp``, an external DHCP server
@@ -356,6 +359,17 @@ The following attributes are supported:
 ``bridge_ports``
     For bridge interfaces, a list of names of network interfaces to add to the
     bridge.
+``bridge_stp``
+    .. note::
+
+       For CentOS Stream 8 and Rocky Linux 8 enabling STP is not supported.
+
+       For Rocky Linux 9, the ``bridge_stp`` attribute is set to false to preserve
+       backwards compatibility with network scripts. This is because the Network
+       Manager sets STP to true by default on bridges.
+
+    Enable or disable the Spanning Tree Protocol (STP) on this bridge. Should be
+    set to a boolean value. The default is not set on Ubuntu systems.
 ``bond_mode``
     For bond interfaces, the bond's mode, e.g. 802.3ad.
 ``bond_ad_select``
@@ -473,8 +487,9 @@ Configuring VLAN Interfaces
 ---------------------------
 
 A VLAN interface may be configured by setting the ``interface`` attribute of a
-network to the name of the VLAN interface.  The interface name must be of the
-form ``<parent interface>.<VLAN ID>``.
+network to the name of the VLAN interface. The interface name must normally be
+of the form ``<parent interface>.<VLAN ID>`` to ensure compatibility with all
+supported host operating systems.
 
 To configure a network called ``example`` with a VLAN interface with a parent
 interface of ``eth2`` for VLAN ``123``:
@@ -490,6 +505,16 @@ To keep the configuration DRY, reference the network's ``vlan`` attribute:
    :caption: ``inventory/group_vars/<group>/network-interfaces``
 
    example_interface: "eth2.{{ example_vlan }}"
+
+Alternatively, when using Ubuntu as a host operating system, VLAN interfaces
+can be named arbitrarily using syntax supported by ``systemd-networkd``. In
+this case, a ``parent`` attribute must specify the underlying interface:
+
+.. code-block:: yaml
+   :caption: ``inventory/group_vars/<group>/network-interfaces``
+
+   example_interface: "myvlan{{ example_vlan }}"
+   example_parent: "eth2"
 
 Ethernet interfaces, bridges, and bond master interfaces may all be parents to
 a VLAN interface.
@@ -599,6 +624,15 @@ Workload inspection network (``inspection_net_name``)
     metal workload hosts.
 
 These roles are configured in ``${KAYOBE_CONFIG_PATH}/networks.yml``.
+
+.. warning::
+
+    Changing ``external_net_names`` after initial deployment has a potential
+    for creating network loops. Kayobe / Ansible will not clean up
+    any items removed from this variable in the OVS. Any additional interfaces
+    that map to network names from the list will be added to the bridge. Any
+    previous entries that should be removed, must be deleted in OVS manually
+    prior to applying changes via Kayobe in order to avoid creating a loop.
 
 Configuring Network Roles
 -------------------------

@@ -129,6 +129,7 @@
             - { name: mariabackup, file: backup.my.cnf }
             - { name: mariadb, file: galera.cnf }
             - { name: masakari, file: masakari.conf }
+            - { name: multipathd, file: multipath.conf }
             - { name: murano, file: murano.conf }
             - { name: neutron, file: neutron.conf }
             - { name: neutron_ml2, file: neutron/ml2_conf.ini }

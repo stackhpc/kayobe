@@ -82,6 +82,7 @@ def test_service_config_directory(host, path):
      'magnum.conf',
      'manila.conf',
      'masakari.conf',
+     'multipath.conf',
      'murano.conf',
      'neutron/ml2_conf.ini',
      'neutron.conf',
