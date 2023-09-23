@@ -14,3 +14,4 @@
   loop: "{{ netplan_systemd_networkd_config.files }}"
   loop_control:
     label: "{{ item.path }}"
+  when: "'seed-hypervisor' not in group_names"
