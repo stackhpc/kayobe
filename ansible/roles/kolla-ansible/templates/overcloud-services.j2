@@ -28,6 +28,13 @@ common
 [elasticsearch-curator:children]
 elasticsearch
 
+[opensearch:children]
+control
+
+# Opensearch dashboards
+[opensearch-dashboards:children]
+opensearch
+
 # Glance
 [glance-api:children]
 glance
@@ -506,9 +513,6 @@ network
 storage
 
 [prometheus-alertmanager:children]
-monitoring
-
-[prometheus-msteams:children]
 monitoring
 
 [prometheus-openstack-exporter:children]

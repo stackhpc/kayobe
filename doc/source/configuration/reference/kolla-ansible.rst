@@ -725,6 +725,7 @@ which files are supported.
    ``masakari.conf``               Masakari configuration.
    ``masakari/*``                  Extended masakari configuration.
    ``monasca/*``                   Extended Monasca configuration.
+   ``multipath.conf``              Multipathd configuration.
    ``murano.conf``                 Murano configuration.
    ``murano/*``                    Extended murano configuration.
    ``neutron.conf``                Neutron configuration.
@@ -734,6 +735,7 @@ which files are supported.
    ``nova/*``                      Extended nova configuration.
    ``octavia.conf``                Octavia configuration.
    ``octavia/*``                   Extended Octavia configuration.
+   ``opensearch/*``                OpenSearch configuration.
    ``placement.conf``              Placement configuration.
    ``placement/*``                 Extended Placement configuration.
    ``prometheus/*``                Prometheus configuration.
