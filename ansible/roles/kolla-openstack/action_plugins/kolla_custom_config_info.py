@@ -132,22 +132,42 @@ class ConfigCollector(object):
                 continue
 
             if rule["strategy"] == "merge_yaml":
-                merge_yaml = {
-                    "sources": sources,
-                    "dest": destination,
-                    "params": rule.get('params', [])
-                }
-                actions["merge_yaml"].append(merge_yaml)
+                if len(sources) > 1:
+                    merge_yaml = {
+                        "sources": sources,
+                        "dest": destination,
+                        "params": rule.get('params', [])
+                    }
+                    actions["merge_yaml"].append(merge_yaml)
+                else:
+                    # Fallback to templating so that we don't need to parse
+                    # yaml.
+                    template = {
+                        "src": sources[-1],
+                        "dest": destination,
+                        "params": rule.get('params', [])
+                    }
+                    actions["template"].append(template)
                 continue
 
             if rule["strategy"] == "merge_configs":
-                merge_configs = {
-                    "sources": sources,
-                    "dest": destination,
-                    "params": rule.get('params', [])
-                }
-                actions["merge_configs"].append(merge_configs)
-                continue
+               if len(sources) > 1:
+                    merge_configs = {
+                        "sources": sources,
+                        "dest": destination,
+                        "params": rule.get('params', [])
+                    }
+                    actions["merge_configs"].append(merge_configs)
+               else:
+                    # Fallback to templating so that we don't need to parse
+                    # ini.
+                    template = {
+                        "src": sources[-1],
+                        "dest": destination,
+                        "params": rule.get('params', [])
+                    }
+                    actions["template"].append(template)
+               continue
 
             if rule["strategy"] == "concat":
                 concat = {
