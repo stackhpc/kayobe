@@ -25,3 +25,4 @@
 - import_playbook: "kolla-ansible-user.yml"
 - import_playbook: "kolla-pip.yml"
 - import_playbook: "kolla-target-venv.yml"
+- import_playbook: "vgpu.yml"
