@@ -153,6 +153,7 @@ kolla_feature_flags:
   - keystone_federation
   - keystone_horizon_policy_file
   - kuryr
+  - letsencrypt
   - loadbalancer
   - magnum
   - manila
