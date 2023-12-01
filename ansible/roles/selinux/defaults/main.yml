@@ -3,7 +3,7 @@
 selinux_policy: targeted
 
 # Target SELinux state
-selinux_state: disabled
+selinux_state: "{{ kolla_selinux_state | default('disabled') }}"
 
 # Whether to reboot to apply SELinux config changes.
 disable_selinux_do_reboot: true
