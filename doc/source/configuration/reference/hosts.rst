@@ -479,15 +479,16 @@ package is added to all ``overcloud`` hosts:
 SELinux
 =======
 *tags:*
-  | ``disable-selinux``
+  | ``selinux``
 
 .. note:: SELinux applies to CentOS and Rocky systems only.
 
-SELinux is not supported by Kolla Ansible currently, so it is disabled by
-Kayobe. If necessary, Kayobe will reboot systems in order to apply a change to
+SELinux is not supported by Kolla Ansible currently, so it is set to permissive
+by Kayobe. If necessary, it can be configured to disabled by setting
+``selinux_state`` to ``disabled``. Kayobe will reboot systems when required for
 the SELinux configuration. The timeout for waiting for systems to reboot is
-``disable_selinux_reboot_timeout``. Alternatively, the reboot may be avoided by
-setting ``disable_selinux_do_reboot`` to ``false``.
+``selinux_reboot_timeout``. Alternatively, the reboot may be avoided by setting
+``selinux_do_reboot`` to ``false``.
 
 Network Configuration
 =====================
@@ -502,12 +503,11 @@ Firewalld
 *tags:*
   | ``firewall``
 
-.. note:: Firewalld is supported on CentOS and Rocky systems only. Currently no
-          firewall is supported on Ubuntu.
-
-Firewalld can be used to provide a firewall on CentOS/Rocky systems. Since the
+Firewalld can be used to provide a firewall on supported systems. Since the
 Xena release, Kayobe provides support for enabling or disabling firewalld, as
 well as defining zones and rules.
+Since the Zed 13.0.0 release, Kayobe added support for configuring firewalld on
+Ubuntu systems.
 
 The following variables can be used to set whether to enable firewalld:
 
