@@ -279,12 +279,6 @@ kolla_external_tls_cert:
 kolla_internal_tls_cert:
 
 ###############################################################################
-# SELinux
-
-# Desired SELinux state.
-kolla_selinux_state:
-
-###############################################################################
 # Docker configuration.
 
 # Name of the docker storage driver.
