@@ -56,7 +56,9 @@ def continue_on_unreachable(parsed_args: argparse.Namespace,
 
 def catch_continuable_errors(func):
     """Decorator to..."""
-    @functools.wraps(func)
+    # FIXME: breaks fake_run:
+    # TypeError: multiple values for argument 'continuable'
+    # @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -84,7 +86,7 @@ def handle_continued_errors(func):
             exit_code |= error.exit_code
         assert exit_code != 0, ("Expected non-zero exit code when continuing "
                                 "after error")
-        sys.exit(exit_code)
+        return exit_code
     return wrapper
 
 
@@ -296,6 +298,7 @@ class HookDispatcher(CommandHook):
         return parsed_args
 
     def after(self, parsed_args, return_code):
+        # TODO: Handle errors here.
         if return_code == 0:
             self.run_hooks(parsed_args, "post")
         else:
@@ -1176,7 +1179,7 @@ class OvercloudFactsGather(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
                            Command):
     """Gather facts for Kayobe and Kolla Ansible."""
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Gathering overcloud host facts")
 
@@ -1392,7 +1395,7 @@ class OvercloudServiceConfigurationGenerate(KayobeAnsibleMixin,
                            help="skip the kolla-ansible prechecks command")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Generating overcloud service configuration")
 
@@ -1481,7 +1484,7 @@ class OvercloudServiceDeploy(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
         self.add_continue_on_unreachable_args(group)
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Deploying overcloud services")
 
@@ -1536,7 +1539,7 @@ class OvercloudServiceDeployContainers(KollaAnsibleMixin, KayobeAnsibleMixin,
                            help="skip the kolla-ansible prechecks command")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Deploying overcloud services (containers only)")
 
@@ -1606,7 +1609,7 @@ class OvercloudServiceReconfigure(KollaAnsibleMixin, KayobeAnsibleMixin,
                            help="skip the kolla-ansible prechecks command")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Reconfiguring overcloud services")
 
@@ -1659,7 +1662,7 @@ class OvercloudServiceStop(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
                                 "stop running services.")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         if not parsed_args.yes_i_really_really_mean_it:
             self.app.LOG.error("This will stop running services. Specify "
@@ -1709,7 +1712,7 @@ class OvercloudServiceUpgrade(KollaAnsibleMixin, KayobeAnsibleMixin,
                            help="skip the kolla-ansible prechecks command")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Upgrading overcloud services")
 
@@ -1757,7 +1760,7 @@ class OvercloudServiceDestroy(KollaAnsibleMixin, KayobeAnsibleMixin,
                                 "permantently destroy all services and data.")
         return parser
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         if not parsed_args.yes_i_really_really_mean_it:
             self.app.LOG.error("This will permanently destroy all services "
@@ -1789,7 +1792,7 @@ class OvercloudContainerImagePull(KayobeAnsibleMixin, KollaAnsibleMixin,
                                   VaultMixin, Command):
     """Pull the overcloud container images from a registry."""
 
-    @handle_continued_errors
+    # @handle_continued_errors
     def take_action(self, parsed_args):
         self.app.LOG.debug("Pulling overcloud container images")
 

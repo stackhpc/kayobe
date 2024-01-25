@@ -42,8 +42,8 @@ def _run_command(command_cls, argv):
     command.app.options, remainder = app_parser.parse_known_args()
     parser = command.get_parser("test")
     parsed_args = parser.parse_args(argv)
-    command.run(parsed_args)
-    return parsed_args
+    result = command.run(parsed_args)
+    return parsed_args, result
 
 
 class TestKayobeAnsibleMixin(unittest.TestCase):
@@ -56,7 +56,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -69,7 +70,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kayobe_playbook(parsed_args)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -82,7 +84,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -101,8 +104,9 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
-        parsed_args = _run_command(TestCommand,
-                                   ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=True,
                                          verbose_level=0)
@@ -124,9 +128,9 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.ContinueOnError(2, run_stats)
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         mock_run.assert_called_once_with(mock.ANY,
                                          continue_on_unreachable=True,
                                          verbose_level=0)
@@ -150,9 +154,10 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.ContinueOnError(2, run_stats)
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         expected_calls = [
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
@@ -178,9 +183,9 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = [exception.ContinueOnError(2, run_stats), None]
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         expected_calls = [
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
@@ -198,7 +203,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -211,7 +217,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kolla_ansible_overcloud(parsed_args)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -224,7 +231,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kolla_ansible_seed(parsed_args)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          verbose_level=0)
 
@@ -236,7 +244,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
-        parsed_args = _run_command(TestCommand, [])
+        parsed_args, result = _run_command(TestCommand, [])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=False,
                                          verbose_level=0)
@@ -255,8 +264,9 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
-        parsed_args = _run_command(TestCommand,
-                                   ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 0)
         mock_run.assert_called_once_with(parsed_args,
                                          continue_on_unreachable=True,
                                          verbose_level=0)
@@ -278,9 +288,9 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.ContinueOnError(2, run_stats)
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         mock_run.assert_called_once_with(mock.ANY,
                                          continue_on_unreachable=True,
                                          verbose_level=0)
@@ -304,9 +314,9 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.ContinueOnError(2, run_stats)
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         expected_calls = [
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
@@ -332,9 +342,9 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = [exception.ContinueOnError(2, run_stats), None]
-        self.assertRaises(SystemExit,
-                          _run_command,
-                          TestCommand, ["--continue-on-unreachable"])
+        parsed_args, result = _run_command(TestCommand,
+                                           ["--continue-on-unreachable"])
+        self.assertEqual(result, 2)
         expected_calls = [
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
             mock.call(mock.ANY, continue_on_unreachable=True, verbose_level=0),
@@ -2086,6 +2096,96 @@ class TestCommands(unittest.TestCase):
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
+
+    @mock.patch.object(commands.KayobeAnsibleMixin,
+                       "run_kayobe_playbooks", autospec=True)
+    @mock.patch.object(commands.KollaAnsibleMixin,
+                       "run_kolla_ansible_overcloud", autospec=True)
+    def test_overcloud_service_deploy_continue_on_unreachable(
+            self, mock_kolla_run, mock_run):
+
+        @commands.catch_continuable_errors
+        def fake_run(*args, **kwargs):
+            if kwargs.get('continuable'):
+                raise exception.ContinueOnError(2, None)
+
+        @commands.catch_continuable_errors
+        def fake_kolla_run(*args, **kwargs):
+            if kwargs.get('continuable'):
+                raise exception.ContinueOnError(4, None)
+
+        mock_run.side_effect = fake_run
+        mock_kolla_run.side_effect = fake_kolla_run
+        command = commands.OvercloudServiceDeploy(TestApp(), [])
+        parser = command.get_parser("test")
+        parsed_args = parser.parse_args([])
+
+        result = command.run(parsed_args)
+        self.assertEqual(6, result)
+
+        expected_calls = [
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "kolla-ansible.yml")],
+                tags="config",
+                ignore_limit=True,
+                check=False,
+            ),
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                [
+                    utils.get_data_files_path("ansible",
+                                              "kolla-openstack.yml"),
+                ],
+                ignore_limit=True,
+                check=False,
+            ),
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                [
+                    utils.get_data_files_path("ansible",
+                                              "overcloud-extras.yml"),
+                ],
+                limit="overcloud",
+                extra_vars={
+                    "kayobe_action": "deploy",
+                },
+                continuable=True,
+            ),
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                [
+                    utils.get_data_files_path("ansible", "public-openrc.yml"),
+                ],
+                ignore_limit=True,
+            ),
+        ]
+        self.assertListEqual(expected_calls, mock_run.call_args_list)
+
+        expected_calls = [
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                "prechecks",
+                continuable=True,
+            ),
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                "deploy",
+                continuable=True,
+            ),
+            mock.call(
+                mock.ANY,
+                mock.ANY,
+                "post-deploy",
+            ),
+        ]
+        self.assertListEqual(expected_calls, mock_kolla_run.call_args_list)
 
     @mock.patch.object(commands.KayobeAnsibleMixin,
                        "run_kayobe_playbooks")
