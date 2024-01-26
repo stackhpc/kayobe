@@ -12,13 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from dataclasses import dataclass
-from dataclasses import field
 import json
 from typing import List
 
 
-@dataclass
 class Stats(object):
     """Kayobe Ansible statistics.
 
@@ -26,11 +23,19 @@ class Stats(object):
     plugin, and needs to be kept in sync with it.
     """
 
-    num_failures: int = 0
-    num_unreachable: int = 0
-    failures: List[str] = field(default_factory=list)
-    unreachable: List[str] = field(default_factory=list)
-    no_hosts_remaining: bool = False
+    num_failures: int
+    num_unreachable: int
+    failures: List[str]
+    unreachable: List[str]
+    no_hosts_remaining: bool
+
+    def __init__(self, num_failures=0, num_unreachable=0, failures=None,
+                 unreachable=None, no_hosts_remaining=False):
+        self.num_failures = num_failures
+        self.num_unreachable = num_unreachable
+        self.failures = failures or []
+        self.unreachable = unreachable or []
+        self.no_hosts_remaining = no_hosts_remaining
 
     @classmethod
     def from_json(cls, json_path: str):

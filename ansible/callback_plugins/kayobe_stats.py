@@ -102,4 +102,4 @@ class CallbackModule(CallbackBase):
             if t['unreachable']:
                 stats.num_unreachable += 1
                 stats.unreachable.append(h)
-        self.write_stats(json.dumps(stats))
+        self.write_stats(json.dumps(stats.__dict__))
