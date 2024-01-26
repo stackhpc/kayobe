@@ -17,6 +17,7 @@ from unittest import mock
 
 import cliff.app
 import cliff.commandmanager
+import stevedore.extension
 
 from kayobe import ansible
 from kayobe.cli import commands
@@ -37,7 +38,10 @@ class TestApp(cliff.app.App):
 
 def _run_command(command_cls, argv):
     """Run a Kayobe command with specified arguments."""
-    command = command_cls(TestApp(), [])
+    command = command_cls(TestApp(), [], "test")
+    hook = stevedore.extension.Extension(
+        None, None, None, commands.HookDispatcher(command=command))
+    command._hooks = [hook]
     app_parser = command.app.build_option_parser("test", "0.0.1")
     command.app.options, remainder = app_parser.parse_known_args()
     parser = command.get_parser("test")
@@ -122,7 +126,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
@@ -147,7 +151,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
@@ -176,7 +180,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
@@ -198,7 +202,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     @mock.patch.object(kolla_ansible, "run")
     def test_run_kolla_ansible(self, mock_run):
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args)
@@ -212,7 +217,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     @mock.patch.object(kolla_ansible, "run_overcloud")
     def test_run_kolla_ansible_overcloud(self, mock_run):
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
                 self.run_kolla_ansible_overcloud(parsed_args)
@@ -226,7 +232,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     @mock.patch.object(kolla_ansible, "run_seed")
     def test_run_kolla_ansible_seed(self, mock_run):
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
                 self.run_kolla_ansible_seed(parsed_args)
@@ -239,7 +246,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     @mock.patch.object(kolla_ansible, "run")
     def test_run_kolla_ansible_continuable(self, mock_run):
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
@@ -254,7 +262,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     def test_run_kolla_ansible_continue_on_unreachable1(self, mock_run):
         # Ansible execution completes successfully.
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def get_parser(self, prog_name):
                 parser = super(TestCommand, self).get_parser(prog_name)
@@ -275,14 +284,15 @@ class TestKollaAnsibleMixin(unittest.TestCase):
     def test_run_kolla_ansible_continue_on_unreachable2(self, mock_run):
         # Ansible execution fails with one unreachable host.
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def get_parser(self, prog_name):
                 parser = super(TestCommand, self).get_parser(prog_name)
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
@@ -300,14 +310,15 @@ class TestKollaAnsibleMixin(unittest.TestCase):
         # Two playbooks run. Ansible execution fails with one unreachable host
         # each time.
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def get_parser(self, prog_name):
                 parser = super(TestCommand, self).get_parser(prog_name)
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
                 self.run_kolla_ansible(parsed_args, continuable=True)
@@ -328,14 +339,15 @@ class TestKollaAnsibleMixin(unittest.TestCase):
         # Two playbooks run. Ansible execution fails with one unreachable host
         # on the first, the second is successful. Kayobe still exits non-zero.
 
-        class TestCommand(commands.KollaAnsibleMixin, commands.Command):
+        class TestCommand(commands.KollaAnsibleMixin,
+                          commands.KayobeAnsibleMixin, commands.Command):
 
             def get_parser(self, prog_name):
                 parser = super(TestCommand, self).get_parser(prog_name)
                 self.add_continue_on_unreachable_args(parser)
                 return parser
 
-            @commands.handle_continued_errors
+            # @commands.handle_continued_errors
             def take_action(self, parsed_args):
                 self.run_kolla_ansible(parsed_args, continuable=True)
                 self.run_kolla_ansible(parsed_args, continuable=True)
@@ -2116,7 +2128,10 @@ class TestCommands(unittest.TestCase):
 
         mock_run.side_effect = fake_run
         mock_kolla_run.side_effect = fake_kolla_run
-        command = commands.OvercloudServiceDeploy(TestApp(), [])
+        command = commands.OvercloudServiceDeploy(TestApp(), [], "foo")
+        hook = stevedore.extension.Extension(
+            None, None, None, commands.HookDispatcher(command=command))
+        command._hooks = [hook]
         parser = command.get_parser("test")
         parsed_args = parser.parse_args([])
 

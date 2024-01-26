@@ -13,7 +13,6 @@
 # under the License.
 
 import argparse
-import functools
 import glob
 import json
 import os
@@ -68,28 +67,6 @@ def catch_continuable_errors(func):
     return wrapper
 
 
-def handle_continued_errors(func):
-    """Decorator to..."""
-    @functools.wraps(func)
-    def wrapper(self, parsed_args):
-        result = func(self, parsed_args)
-        if not self.errors:
-            return result
-
-        # TODO(mgoddard): How to report this?
-        # Return code?
-        # Output file?
-        self.app.LOG.error("Failing as one or more commands failed")
-        exit_code = 0
-        for error in self.errors:
-            self.app.LOG.error(f"{error}")
-            exit_code |= error.exit_code
-        assert exit_code != 0, ("Expected non-zero exit code when continuing "
-                                "after error")
-        return exit_code
-    return wrapper
-
-
 class Command(CliffCommand):
     """Base class for Kayobe commands."""
 
@@ -103,6 +80,28 @@ class Command(CliffCommand):
         group.add_argument("--continue-on-unreachable", action='store_true',
                            help="whether to continue execution when some "
                                 "hosts are unreachable")
+
+    def handle_continued_errors(self, return_code):
+        """TODO"""
+        if not self.errors:
+            return return_code
+
+        # TODO(mgoddard): How to report this?
+        # Return code?
+        # Output file?
+        if return_code:
+            # FIXME(mgoddard): wording: recoverable?
+            self.app.LOG.error("Failing due to unrecoverable error. The "
+                               "following recoverable errors were also "
+                               "encountered")
+        else:
+            self.app.LOG.error("Failing as one or more commands failed")
+        for index, error in enumerate(self.errors):
+            self.app.LOG.error(f"{index}: {error}")
+            return_code |= error.exit_code
+        assert return_code != 0, ("Expected non-zero exit code when "
+                                  "continuing after error")
+        return return_code
 
 
 class VaultMixin(object):
@@ -298,7 +297,7 @@ class HookDispatcher(CommandHook):
         return parsed_args
 
     def after(self, parsed_args, return_code):
-        # TODO: Handle errors here.
+        return_code = self.command.handle_continued_errors(return_code)
         if return_code == 0:
             self.run_hooks(parsed_args, "post")
         else:
