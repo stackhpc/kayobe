@@ -138,7 +138,7 @@ class KayobeAnsibleMixin(object):
         return verbosity_args
 
     @catch_continuable_errors
-    def run_kayobe_playbooks(self, parsed_args, continuable=False, *args,
+    def run_kayobe_playbooks(self, parsed_args, *args, continuable=False,
                              **kwargs):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, continuable)
@@ -146,7 +146,7 @@ class KayobeAnsibleMixin(object):
             parsed_args, continue_on_unreachable=cou, *args, **kwargs)
 
     @catch_continuable_errors
-    def run_kayobe_playbook(self, parsed_args, continuable=False, *args,
+    def run_kayobe_playbook(self, parsed_args, *args, continuable=False,
                             **kwargs):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, continuable)
@@ -208,20 +208,20 @@ class KollaAnsibleMixin(object):
         return verbosity_args
 
     @catch_continuable_errors
-    def run_kolla_ansible(self, parsed_args, continuable=False, *args,
+    def run_kolla_ansible(self, parsed_args, *args, continuable=False,
                           **kwargs):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, continuable)
         return kolla_ansible.run(
-            parsed_args, continue_on_unreachable=cou, *args, **kwargs)
+            parsed_args, *args, continue_on_unreachable=cou, **kwargs)
 
     @catch_continuable_errors
-    def run_kolla_ansible_overcloud(self, parsed_args, continuable=False,
-                                    *args, **kwargs):
+    def run_kolla_ansible_overcloud(self, parsed_args, *args,
+                                    continuable=False, **kwargs):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, continuable)
         return kolla_ansible.run_overcloud(
-            parsed_args, continue_on_unreachable=cou, *args, **kwargs)
+            parsed_args, *args, continue_on_unreachable=cou, **kwargs)
 
     def run_kolla_ansible_seed(self, *args, **kwargs):
         kwargs.update(self._get_verbosity_args())
