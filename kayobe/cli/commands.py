@@ -63,6 +63,7 @@ def catch_continuable_errors(func):
             return func(self, *args, **kwargs)
         except exception.ContinueOnError as e:
             self.app.LOG.error("Hit a continuable error!")
+            # TODO(mgoddard): Get more context about the failure.
             self.errors.append(e)
     return wrapper
 
@@ -97,6 +98,7 @@ class Command(CliffCommand):
         else:
             self.app.LOG.error("Failing as one or more commands failed")
         for index, error in enumerate(self.errors):
+            # FIXME: This is empty.
             self.app.LOG.error(f"{index}: {error}")
             return_code |= error.exit_code
         assert return_code != 0, ("Expected non-zero exit code when "
