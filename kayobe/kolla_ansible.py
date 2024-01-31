@@ -20,6 +20,7 @@ import sys
 import tempfile
 from typing import Optional
 
+import ansible.constants
 import shutil
 
 from kayobe import exception
@@ -183,6 +184,13 @@ def _get_environment(parsed_args, stats_path: Optional[str]):
         if parsed_args.diff and "--diff" not in extra_opts:
             env["EXTRA_OPTS"] += " --diff"
     if stats_path:
+        # Add Kayobe callback plugin to the path.
+        callback_plugins = [
+            os.path.join(parsed_args.config_path, "ansible",
+                         "callback_plugins"),
+            utils.get_data_files_path("ansible", "callback_plugins"),
+        ] + ansible.constants.DEFAULT_CALLBACK_PLUGIN_PATH
+        env.setdefault("ANSIBLE_CALLBACK_PLUGINS", ":".join(callback_plugins))
         env["ANSIBLE_KAYOBE_STATS_PATH"] = stats_path
     return env
 
