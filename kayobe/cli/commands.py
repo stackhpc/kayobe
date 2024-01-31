@@ -1228,6 +1228,7 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
                            help="wipe partition and LVM data from all disks "
                                 "that are not mounted. Warning: this can "
                                 "result in the loss of data")
+        self.add_continue_on_unreachable_args(group)
         return parser
 
     def take_action(self, parsed_args):
@@ -1243,17 +1244,19 @@ class OvercloudHostConfigure(KollaAnsibleMixin, KayobeAnsibleMixin, VaultMixin,
             kwargs["extra_vars"] = {"wipe_disks": True}
         playbooks = _build_playbook_list("overcloud-host-configure")
         self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
-                                  **kwargs)
+                                  continuable=True, **kwargs)
 
         self.generate_kolla_ansible_config(parsed_args, service_config=False)
 
         # Kolla-ansible bootstrap-servers.
-        self.run_kolla_ansible_overcloud(parsed_args, "bootstrap-servers")
+        self.run_kolla_ansible_overcloud(parsed_args, "bootstrap-servers",
+                                         continuable=True)
 
         # Further kayobe playbooks.
         playbooks = _build_playbook_list(
             "docker", "swift-block-devices", "compute-libvirt-host")
-        self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud")
+        self.run_kayobe_playbooks(parsed_args, playbooks, limit="overcloud",
+                                  continuable=True)
 
 
 class OvercloudHostPackageUpdate(KayobeAnsibleMixin, VaultMixin, Command):

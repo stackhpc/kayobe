@@ -1661,6 +1661,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "overcloud-host-configure.yml"),
                 ],
                 limit="overcloud",
+                continuable=True,
             ),
             mock.call(
                 mock.ANY,
@@ -1679,6 +1680,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "compute-libvirt-host.yml"),
                 ],
                 limit="overcloud",
+                continuable=True,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -1687,6 +1689,7 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "bootstrap-servers",
+                continuable=True,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -1718,6 +1721,7 @@ class TestCommands(unittest.TestCase):
                 ],
                 limit="overcloud",
                 extra_vars={"wipe_disks": True},
+                continuable=True,
             ),
             mock.call(
                 mock.ANY,
@@ -1736,6 +1740,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "compute-libvirt-host.yml"),
                 ],
                 limit="overcloud",
+                continuable=True,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -1744,6 +1749,7 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "bootstrap-servers",
+                continuable=True,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
