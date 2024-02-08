@@ -219,6 +219,16 @@ def test_apt_custom_package_repository_is_available(host):
     assert host.package("td-agent").is_installed
 
 
+@pytest.mark.skipif(not _is_apt(), reason="Apt only supported on Ubuntu")
+def test_apt_auth(host):
+    apt_auth = host.file("/etc/apt/apt.auth.d/test.conf")
+    assert apt_auth.exists
+    auth_lines = apt_auth.content_string.split()
+    assert "machine https://apt.example.com" in auth_lines
+    assert "login foo" in auth_lines
+    assert "password bar" in auth_lines
+
+
 @pytest.mark.parametrize('repo', ["appstream", "baseos", "extras", "epel"])
 @pytest.mark.skipif(not _is_dnf_mirror(), reason="DNF OpenDev mirror only for CentOS 8")
 def test_dnf_local_package_mirrors(host, repo):
