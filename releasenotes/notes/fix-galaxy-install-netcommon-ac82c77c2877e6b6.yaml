@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixes an issue installing the ansible.netcommon collection during
+    control host bootstrap/upgrade. This was due to a recent change
+    in the galaxy API. See bug
+    `LP#2038088 <https://bugs.launchpad.net/kayobe/+bug/2038088`__.
+    for more details.

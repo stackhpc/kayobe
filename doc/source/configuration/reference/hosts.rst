@@ -442,6 +442,39 @@ that is signed by the key.
        components: all
        signed_by: example-key.asc
 
+Apt auth configuration
+----------------------
+
+Some repositories may require authentication using HTTP basic auth. Apt
+supports specifying credentials in URLs in ``sources.list`` files, but these
+files must be world-readable. A more secure setup involves writing credentials
+to `auth.conf
+<https://manpages.ubuntu.com/manpages/jammy/man5/apt_auth.conf.5.html>`__
+files which can have more restrictive permissions.
+
+Auth configuration is defined by the ``apt_auth`` variable. The format is a
+list, with each item mapping to a dict/map with the following items:
+
+* ``machine``: ``machine`` entry in the auth file
+* ``login``: ``machine`` entry in the auth file
+* ``password``: ``machine`` entry in the auth file
+* ``filename``: Name of a file in ``/etc/apt/auth.conf.d`` in which to store
+  the auth configuration. The extension should be ``.conf``.
+
+The default value of ``apt_auth`` is an empty list.
+
+In the following example, credentials are provided for package repositories at
+apt.example.com.
+
+.. code-block:: yaml
+   :caption: ``apt.yml``
+
+   apt_auth:
+     - machine: apt.example.com
+       login: my-username
+       password: my-password
+       filename: example.conf
+
 Development tools
 =================
 *tags:*
@@ -479,15 +512,16 @@ package is added to all ``overcloud`` hosts:
 SELinux
 =======
 *tags:*
-  | ``disable-selinux``
+  | ``selinux``
 
 .. note:: SELinux applies to CentOS and Rocky systems only.
 
-SELinux is not supported by Kolla Ansible currently, so it is disabled by
-Kayobe. If necessary, Kayobe will reboot systems in order to apply a change to
+SELinux is not supported by Kolla Ansible currently, so it is set to permissive
+by Kayobe. If necessary, it can be configured to disabled by setting
+``selinux_state`` to ``disabled``. Kayobe will reboot systems when required for
 the SELinux configuration. The timeout for waiting for systems to reboot is
-``disable_selinux_reboot_timeout``. Alternatively, the reboot may be avoided by
-setting ``disable_selinux_do_reboot`` to ``false``.
+``selinux_reboot_timeout``. Alternatively, the reboot may be avoided by setting
+``selinux_do_reboot`` to ``false``.
 
 Network Configuration
 =====================
@@ -502,12 +536,11 @@ Firewalld
 *tags:*
   | ``firewall``
 
-.. note:: Firewalld is supported on CentOS and Rocky systems only. Currently no
-          firewall is supported on Ubuntu.
-
-Firewalld can be used to provide a firewall on CentOS/Rocky systems. Since the
+Firewalld can be used to provide a firewall on supported systems. Since the
 Xena release, Kayobe provides support for enabling or disabling firewalld, as
 well as defining zones and rules.
+Since the Zed 13.0.0 release, Kayobe added support for configuring firewalld on
+Ubuntu systems.
 
 The following variables can be used to set whether to enable firewalld:
 
