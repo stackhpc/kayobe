@@ -26,7 +26,7 @@ class Error(KayobeException):
 class ContinueOnError(KayobeException):
     """Continue after some hosts are failed or unreachable."""
 
-    def __init__(self, exit_code: int, stats: stats.Stats):
+    def __init__(self, cmd: str, exit_code: int, stats: stats.Stats):
         super(ContinueOnError, self).__init__()
         self.exit_code = exit_code
         self.stats = stats

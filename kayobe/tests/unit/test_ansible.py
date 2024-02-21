@@ -279,7 +279,7 @@ class TestCase(unittest.TestCase):
         ]
         expected_env = {
             "KAYOBE_CONFIG_PATH": "/etc/kayobe",
-            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
         }
         mock_run.assert_called_once_with(expected_cmd, check_output=False,
                                          quiet=False, env=expected_env)
@@ -440,7 +440,7 @@ class TestCase(unittest.TestCase):
         ]
         expected_env = {
             "KAYOBE_CONFIG_PATH": "/etc/kayobe",
-            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
         }
         mock_run.assert_called_once_with(expected_cmd, check_output=False,
                                          quiet=False, env=expected_env)

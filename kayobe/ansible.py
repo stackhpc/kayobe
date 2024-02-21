@@ -235,7 +235,7 @@ def _get_environment(parsed_args, stats_path: Optional[str]):
     if utils.is_readable_file(ansible_cfg_path)["result"]:
         env.setdefault("ANSIBLE_CONFIG", ansible_cfg_path)
     if stats_path:
-        env["ANSIBLE_KAYOBE_STATS_PATH"] = stats_path
+        env["ANSIBLE_KOLLA_STATS_PATH"] = stats_path
     return env
 
 
@@ -271,7 +271,7 @@ def run_playbooks(parsed_args, playbooks,
                     run_stats.completed_without_failures()):
                 LOG.info(f"Continuing with {run_stats.num_unreachable} "
                          "unreachable hosts")
-                raise exception.ContinueOnError(e.returncode, run_stats)
+                raise exception.ContinueOnError(" ".join(cmd), e.returncode, run_stats)
         sys.exit(e.returncode)
     finally:
         if stats_path:

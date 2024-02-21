@@ -222,8 +222,7 @@ class TestCase(unittest.TestCase):
         ]
         expected_cmd = " ".join(expected_cmd)
         expected_env = {
-            "ANSIBLE_CALLBACK_PLUGINS": mock.ANY,
-            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
         }
         mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
                                          env=expected_env)
@@ -342,8 +341,7 @@ class TestCase(unittest.TestCase):
         ]
         expected_cmd = " ".join(expected_cmd)
         expected_env = {
-            "ANSIBLE_CALLBACK_PLUGINS": mock.ANY,
-            "ANSIBLE_KAYOBE_STATS_PATH": "/path/to/tmpdir/stats.json"
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
         }
         mock_run.assert_called_once_with(expected_cmd, shell=True, quiet=False,
                                          env=expected_env)

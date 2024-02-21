@@ -1,8 +1,8 @@
 ---
 collections:
-  - name: https://opendev.org/openstack/ansible-collection-kolla
+  - name: https://github.com/stackhpc/ansible-collection-kolla
     type: git
-    version: unmaintained/yoga
+    version: yoga-continue-on-error
   - name: ansible.netcommon
     source: https://old-galaxy.ansible.com
     version: '>=1.0.0,<3.0.0'

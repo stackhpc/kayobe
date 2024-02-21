@@ -131,7 +131,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = exception.ContinueOnError(2, run_stats)
+        mock_run.side_effect = exception.ContinueOnError("/command", 2,
+                                                         run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
         self.assertEqual(result, 2)
@@ -157,7 +158,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = exception.ContinueOnError(2, run_stats)
+        mock_run.side_effect = exception.ContinueOnError("/command", 2,
+                                                         run_stats)
 
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
@@ -186,7 +188,10 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 self.run_kayobe_playbooks(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = [exception.ContinueOnError(2, run_stats), None]
+        mock_run.side_effect = [
+            exception.ContinueOnError("/command", 2, run_stats),
+            None
+        ]
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
         self.assertEqual(result, 2)
@@ -297,7 +302,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = exception.ContinueOnError(2, run_stats)
+        mock_run.side_effect = exception.ContinueOnError("/command", 2,
+                                                         run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
         self.assertEqual(result, 2)
@@ -324,7 +330,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = exception.ContinueOnError(2, run_stats)
+        mock_run.side_effect = exception.ContinueOnError("/command", 2,
+                                                         run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
         self.assertEqual(result, 2)
@@ -353,7 +360,10 @@ class TestKollaAnsibleMixin(unittest.TestCase):
                 self.run_kolla_ansible(parsed_args, continuable=True)
 
         run_stats = stats.Stats(num_unreachable=1)
-        mock_run.side_effect = [exception.ContinueOnError(2, run_stats), None]
+        mock_run.side_effect = [
+            exception.ContinueOnError("/command", 2, run_stats),
+            None
+        ]
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
         self.assertEqual(result, 2)
@@ -2125,12 +2135,12 @@ class TestCommands(unittest.TestCase):
         @commands.catch_continuable_errors
         def fake_run(*args, **kwargs):
             if kwargs.get('continuable'):
-                raise exception.ContinueOnError(2, None)
+                raise exception.ContinueOnError("/command", 2, None)
 
         @commands.catch_continuable_errors
         def fake_kolla_run(*args, **kwargs):
             if kwargs.get('continuable'):
-                raise exception.ContinueOnError(4, None)
+                raise exception.ContinueOnError("/command", 4, None)
 
         mock_run.side_effect = fake_run
         mock_kolla_run.side_effect = fake_kolla_run

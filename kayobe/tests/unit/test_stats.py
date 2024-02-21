@@ -47,6 +47,32 @@ class TestCase(unittest.TestCase):
         self.assertEqual(s.unreachable, ["bar", "baz"])
         self.assertTrue(s.no_hosts_remaining)
 
+    @mock.patch("kayobe.stats.open")
+    def test_from_json_missing_fields(self, mock_open):
+        # Be open to changes in the format returned by the callback plugin.
+        json_file = io.StringIO("{}")
+        mock_open.return_value.__enter__.return_value = json_file
+        s = Stats.from_json("/path/to/json")
+        mock_open.assert_called_once_with("/path/to/json")
+        self.assertEqual(s.num_failures, 0)
+        self.assertEqual(s.num_unreachable, 0)
+        self.assertEqual(s.failures, [])
+        self.assertEqual(s.unreachable, [])
+        self.assertFalse(s.no_hosts_remaining)
+
+    @mock.patch("kayobe.stats.open")
+    def test_from_json_unexpected_fields(self, mock_open):
+        # Be open to changes in the format returned by the callback plugin.
+        json_file = io.StringIO("""{"num_fizzwozzers": 0}""")
+        mock_open.return_value.__enter__.return_value = json_file
+        s = Stats.from_json("/path/to/json")
+        mock_open.assert_called_once_with("/path/to/json")
+        self.assertEqual(s.num_failures, 0)
+        self.assertEqual(s.num_unreachable, 0)
+        self.assertEqual(s.failures, [])
+        self.assertEqual(s.unreachable, [])
+        self.assertFalse(s.no_hosts_remaining)
+
     def test_completed_without_failures(self):
         s = Stats()
         self.assertTrue(s.completed_without_failures())
