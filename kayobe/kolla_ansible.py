@@ -20,7 +20,6 @@ import sys
 import tempfile
 from typing import Optional
 
-import ansible.constants
 import shutil
 
 from kayobe import exception
