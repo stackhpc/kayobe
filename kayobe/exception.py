@@ -28,5 +28,6 @@ class ContinueOnError(KayobeException):
 
     def __init__(self, cmd: str, exit_code: int, stats: stats.Stats):
         super(ContinueOnError, self).__init__()
+        self.cmd = cmd
         self.exit_code = exit_code
         self.stats = stats

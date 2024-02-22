@@ -98,8 +98,10 @@ class Command(CliffCommand):
         else:
             self.app.LOG.error("Failing as one or more commands failed")
         for index, error in enumerate(self.errors):
-            # FIXME: This is empty.
-            self.app.LOG.error(f"{index}: {error}")
+            self.app.LOG.error(f"Non-fatal error {index+1}:")
+            self.app.LOG.error(f"  Exit code: {error.exit_code}")
+            self.app.LOG.error(f"  Command:   {error.cmd}")
+            self.app.LOG.error(f"  Stats:     {error.stats}")
             return_code |= error.exit_code
         assert return_code != 0, ("Expected non-zero exit code when "
                                   "continuing after error")
