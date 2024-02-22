@@ -13,3 +13,4 @@ selinux # MIT
 oslo.config>=5.2.0 # Apache-2.0
 paramiko # LGPL
 jsonschema<5 # MIT
+colorama # BSD

@@ -18,9 +18,12 @@ import json
 import os
 import re
 import sys
+import textwrap
 
 from cliff.command import Command as CliffCommand
 from cliff.hooks import CommandHook
+import colorama
+import yaml
 
 from kayobe import ansible
 from kayobe import environment
@@ -100,18 +103,23 @@ class Command(CliffCommand):
         # TODO(mgoddard): How to report this?
         # Return code?
         # Output file?
+        yellow = colorama.Fore.YELLOW
+        colorama.init(autoreset=True)
         if return_code:
-            self.app.LOG.error("Failing due to fatal error. The following "
-                               "non-fatal errors were also encountered")
+            red = colorama.Fore.RED
+            self.app.LOG.error(f"{red}Failing due to fatal error. The "
+                               "following non-fatal errors were also "
+                               "encountered")
         else:
-            self.app.LOG.error("All commands completed but one or more "
-                               "non-fatal errors were also encountered")
+            self.app.LOG.error(f"{yellow}All commands completed but one or "
+                               "more non-fatal errors were also encountered")
         for index, error in enumerate(self.non_fatal_errors):
-            stats = json.dumps(error.stats.__dict__)
-            self.app.LOG.error(f"Non-fatal error {index+1}:")
-            self.app.LOG.error(f"  Exit code: {error.exit_code}")
-            self.app.LOG.error(f"  Command:   {error.cmd}")
-            self.app.LOG.error(f"  Stats:     {stats}")
+            stats = yaml.dump(error.stats.__dict__, default_flow_style=False)
+            self.app.LOG.error(f"{yellow}Non-fatal error {index+1}:")
+            self.app.LOG.error(f"{yellow}  Exit code: {error.exit_code}")
+            self.app.LOG.error(f"{yellow}  Command: {error.cmd}")
+            self.app.LOG.error(f"{yellow}  Stats:")
+            self.app.LOG.error(textwrap.indent(stats, "    "))
             return_code |= error.exit_code
         assert return_code != 0, ("Expected non-zero exit code when "
                                   "continuing after non-fatal errors")

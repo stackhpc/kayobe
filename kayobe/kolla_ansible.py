@@ -214,7 +214,7 @@ def run(parsed_args, command, inventory_filename, extra_vars=None,
                     run_stats.completed_without_failures()):
                 LOG.info(f"Continuing with {run_stats.num_unreachable} "
                          "unreachable hosts")
-                raise exception.NonFatalError(" ".join(cmd[2:]), e.returncode,
+                raise exception.NonFatalError(" ".join(cmd[3:]), e.returncode,
                                               run_stats)
         sys.exit(e.returncode)
     finally:
