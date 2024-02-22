@@ -23,11 +23,11 @@ class Error(KayobeException):
     """Generic user error."""
 
 
-class ContinueOnError(KayobeException):
-    """Continue after some hosts are failed or unreachable."""
+class NonFatalError(KayobeException):
+    """Hit a non-fatal error while executing a command."""
 
     def __init__(self, cmd: str, exit_code: int, stats: stats.Stats):
-        super(ContinueOnError, self).__init__()
+        super(NonFatalError, self).__init__()
         self.cmd = cmd
         self.exit_code = exit_code
         self.stats = stats

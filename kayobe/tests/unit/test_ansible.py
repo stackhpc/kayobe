@@ -455,7 +455,7 @@ class TestCase(unittest.TestCase):
             failures=[], unreachable=[],
             no_hosts_remaining=False)
         self._test_run_playbooks_continue_on_unreachable(
-            run_stats, exception.ContinueOnError)
+            run_stats, exception.NonFatalError)
 
     def test_run_playbooks_continue_on_unreachable_failures(self):
         # Execution reached the end with 1 unreachable host and 1 failed

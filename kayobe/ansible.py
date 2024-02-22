@@ -271,7 +271,8 @@ def run_playbooks(parsed_args, playbooks,
                     run_stats.completed_without_failures()):
                 LOG.info(f"Continuing with {run_stats.num_unreachable} "
                          "unreachable hosts")
-                raise exception.ContinueOnError(" ".join(cmd), e.returncode, run_stats)
+                raise exception.NonFatalError(" ".join(cmd), e.returncode,
+                                              run_stats)
         sys.exit(e.returncode)
     finally:
         if stats_path:

@@ -61,7 +61,7 @@ def catch_continuable_errors(func):
     def wrapper(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except exception.ContinueOnError as e:
+        except exception.NonFatalError as e:
             self.app.LOG.error("Hit a continuable error!")
             # TODO(mgoddard): Get more context about the failure.
             self.errors.append(e)
