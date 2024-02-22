@@ -251,7 +251,6 @@ def run_playbooks(parsed_args, playbooks,
                      verbose_level=verbose_level, check=check,
                      ignore_limit=ignore_limit, list_tasks=list_tasks,
                      diff=diff)
-    # TODO(mgoddard): Refactor to stats module?
     stats_path: Optional[str] = None
     if continue_on_unreachable:
         stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")

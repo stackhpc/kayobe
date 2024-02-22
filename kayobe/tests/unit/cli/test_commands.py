@@ -81,12 +81,12 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                                          verbose_level=0)
 
     @mock.patch.object(ansible, "run_playbooks")
-    def test_run_kayobe_playbooks_continuable(self, mock_run):
+    def test_run_kayobe_playbooks_non_fatal(self, mock_run):
 
         class TestCommand(commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
 
         parsed_args, result = _run_command(TestCommand, [])
         self.assertEqual(result, 0)
@@ -106,7 +106,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
                 return parser
 
             def take_action(self, parsed_args):
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
 
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
@@ -128,7 +128,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.NonFatalError("/command", 2,
@@ -154,8 +154,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.NonFatalError("/command", 2,
@@ -184,8 +184,8 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
-                self.run_kayobe_playbooks(parsed_args, continuable=True)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
+                self.run_kayobe_playbooks(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = [
@@ -249,13 +249,13 @@ class TestKollaAnsibleMixin(unittest.TestCase):
                                          verbose_level=0)
 
     @mock.patch.object(kolla_ansible, "run")
-    def test_run_kolla_ansible_continuable(self, mock_run):
+    def test_run_kolla_ansible_non_fatal(self, mock_run):
 
         class TestCommand(commands.KollaAnsibleMixin,
                           commands.KayobeAnsibleMixin, commands.Command):
 
             def take_action(self, parsed_args):
-                self.run_kolla_ansible(parsed_args, continuable=True)
+                self.run_kolla_ansible(parsed_args, fatal=False)
 
         parsed_args, result = _run_command(TestCommand, [])
         self.assertEqual(result, 0)
@@ -276,7 +276,7 @@ class TestKollaAnsibleMixin(unittest.TestCase):
                 return parser
 
             def take_action(self, parsed_args):
-                self.run_kolla_ansible(parsed_args, continuable=True)
+                self.run_kolla_ansible(parsed_args, fatal=False)
 
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
@@ -299,7 +299,7 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kolla_ansible(parsed_args, continuable=True)
+                self.run_kolla_ansible(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.NonFatalError("/command", 2,
@@ -326,8 +326,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kolla_ansible(parsed_args, continuable=True)
-                self.run_kolla_ansible(parsed_args, continuable=True)
+                self.run_kolla_ansible(parsed_args, fatal=False)
+                self.run_kolla_ansible(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = exception.NonFatalError("/command", 2,
@@ -356,8 +356,8 @@ class TestKollaAnsibleMixin(unittest.TestCase):
 
             # @commands.handle_continued_errors
             def take_action(self, parsed_args):
-                self.run_kolla_ansible(parsed_args, continuable=True)
-                self.run_kolla_ansible(parsed_args, continuable=True)
+                self.run_kolla_ansible(parsed_args, fatal=False)
+                self.run_kolla_ansible(parsed_args, fatal=False)
 
         run_stats = stats.Stats(num_unreachable=1)
         mock_run.side_effect = [
@@ -1625,7 +1625,7 @@ class TestCommands(unittest.TestCase):
                     utils.get_data_files_path(
                         "ansible", "overcloud-facts-gather.yml"),
                 ],
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -1641,7 +1641,7 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "gather-facts",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -1671,7 +1671,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "overcloud-host-configure.yml"),
                 ],
                 limit="overcloud",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -1690,7 +1690,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "compute-libvirt-host.yml"),
                 ],
                 limit="overcloud",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -1699,7 +1699,7 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "bootstrap-servers",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -1731,7 +1731,7 @@ class TestCommands(unittest.TestCase):
                 ],
                 limit="overcloud",
                 extra_vars={"wipe_disks": True},
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -1750,7 +1750,7 @@ class TestCommands(unittest.TestCase):
                         "ansible", "compute-libvirt-host.yml"),
                 ],
                 limit="overcloud",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -1759,7 +1759,7 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "bootstrap-servers",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -2095,7 +2095,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "deploy",
                 },
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2111,12 +2111,12 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
                 "deploy",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2132,15 +2132,15 @@ class TestCommands(unittest.TestCase):
     def test_overcloud_service_deploy_continue_on_unreachable(
             self, mock_kolla_run, mock_run):
 
-        @commands.catch_continuable_errors
+        @commands.catch_non_fatal_errors
         def fake_run(*args, **kwargs):
-            if kwargs.get('continuable'):
-                raise exception.NonFatalError("/command", 2, None)
+            if not kwargs.get('fatal', True):
+                raise exception.NonFatalError("/command", 2, stats.Stats())
 
-        @commands.catch_continuable_errors
+        @commands.catch_non_fatal_errors
         def fake_kolla_run(*args, **kwargs):
-            if kwargs.get('continuable'):
-                raise exception.NonFatalError("/command", 4, None)
+            if not kwargs.get('fatal', True):
+                raise exception.NonFatalError("/command", 4, stats.Stats())
 
         mock_run.side_effect = fake_run
         mock_kolla_run.side_effect = fake_kolla_run
@@ -2184,7 +2184,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "deploy",
                 },
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2202,13 +2202,13 @@ class TestCommands(unittest.TestCase):
                 mock.ANY,
                 mock.ANY,
                 "prechecks",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
                 mock.ANY,
                 "deploy",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2258,7 +2258,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "deploy",
                 },
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -2267,12 +2267,12 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
                 "deploy-containers",
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -2356,7 +2356,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "reconfigure",
                 },
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2372,12 +2372,12 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
                 "reconfigure",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2425,7 +2425,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "stop",
                 },
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_run.call_args_list)
@@ -2435,7 +2435,7 @@ class TestCommands(unittest.TestCase):
                 mock.ANY,
                 "stop",
                 extra_args=["--yes-i-really-really-mean-it"],
-                continuable=True,
+                fatal=False,
             ),
         ]
         self.assertEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -2493,7 +2493,7 @@ class TestCommands(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "upgrade",
                 },
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
@@ -2510,12 +2510,12 @@ class TestCommands(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
                 "upgrade",
-                continuable=True,
+                fatal=False,
             ),
             mock.call(
                 mock.ANY,
