@@ -121,10 +121,18 @@ class Command(CliffCommand):
             red = colorama.Fore.RED
             self.app.LOG.error(f"{red}Failing due to fatal error. The "
                                "following non-fatal errors were also "
-                               "encountered")
+                               "encountered:")
         else:
             self.app.LOG.error(f"{yellow}All commands completed but one or "
-                               "more non-fatal errors were also encountered")
+                               "more non-fatal errors were also encountered:")
+            # Ansible uses the following return codes:
+            # 0: ok
+            # 1: error
+            # 2: failed hosts
+            # 4: unreachable hosts
+            # 255: unknown error
+            # So let's OR 32 with the other return codes to indicate a non-fatal error.
+            return_code |= 32
         for index, error in enumerate(self.non_fatal_errors):
             stats = yaml.dump(error.stats.__dict__, default_flow_style=False)
             self.app.LOG.error(f"{yellow}Non-fatal error {index+1}:")
