@@ -59,18 +59,30 @@ def continue_on_unreachable(parsed_args: argparse.Namespace,
 def catch_non_fatal_errors(func):
     """Decorator to catch and record non-fatal errors.
 
-    Non-fatal errors are signalled by the NonFatalError exception. This
+    Non-fatal errors are signalled by the AnsibleCommandError exception. This
     decorator catches them and appends them to the non_fatal_errors list.
     """
     # FIXME: breaks fake_run:
     # TypeError: multiple values for argument 'fatal'
     # @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, parsed_args, *args, **kwargs):
         try:
-            return func(self, *args, **kwargs)
-        except exception.NonFatalError as e:
-            self.app.LOG.error("Hit a non-fatal error!")
-            self.non_fatal_errors.append(e)
+            return func(self, parsed_args, *args, **kwargs)
+        except exception.AnsibleCommandError as e:
+            # Allow to continue non-fatal commands if execution reached the end
+            # without any failures.
+            fatal = kwargs.get('fatal', True)
+            if (continue_on_unreachable(parsed_args, fatal) and
+                    e.stats and
+                    e.stats.num_unreachable > 0 and
+                    e.stats.completed_without_failures()):
+                self.app.LOG.error("Hit a non-fatal error!")
+                self.app.LOG.info(f"Continuing with "
+                                  "{run_stats.num_unreachable} unreachable "
+                                  "hosts")
+                self.non_fatal_errors.append(e)
+            else:
+                sys.exit(e.exit_code)
     return wrapper
 
 
@@ -165,7 +177,7 @@ class KayobeAnsibleMixin(object):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, fatal)
         return ansible.run_playbooks(
-            parsed_args, continue_on_unreachable=cou, *args, **kwargs)
+            parsed_args, collect_stats=cou, *args, **kwargs)
 
     @catch_non_fatal_errors
     def run_kayobe_playbook(self, parsed_args, *args, fatal=True,
@@ -173,11 +185,12 @@ class KayobeAnsibleMixin(object):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, fatal)
         return ansible.run_playbook(
-            parsed_args, continue_on_unreachable=cou, *args, **kwargs)
+            parsed_args, collect_stats=cou, *args, **kwargs)
 
-    def run_kayobe_config_dump(self, parsed_args, *args, **kwargs):
+    @catch_non_fatal_errors
+    def run_kayobe_config_dump(self, *args, **kwargs):
         kwargs.update(self._get_verbosity_args())
-        return ansible.config_dump(parsed_args, *args, **kwargs)
+        return ansible.config_dump(*args, **kwargs)
 
     def generate_kolla_ansible_config(self, parsed_args, install=False,
                                       service_config=True,
@@ -235,7 +248,7 @@ class KollaAnsibleMixin(object):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, fatal)
         return kolla_ansible.run(
-            parsed_args, *args, continue_on_unreachable=cou, **kwargs)
+            parsed_args, *args, collect_stats=cou, **kwargs)
 
     @catch_non_fatal_errors
     def run_kolla_ansible_overcloud(self, parsed_args, *args,
@@ -243,8 +256,9 @@ class KollaAnsibleMixin(object):
         kwargs.update(self._get_verbosity_args())
         cou = continue_on_unreachable(parsed_args, fatal)
         return kolla_ansible.run_overcloud(
-            parsed_args, *args, continue_on_unreachable=cou, **kwargs)
+            parsed_args, *args, collect_stats=cou, **kwargs)
 
+    @catch_non_fatal_errors
     def run_kolla_ansible_seed(self, *args, **kwargs):
         kwargs.update(self._get_verbosity_args())
         return kolla_ansible.run_seed(*args, **kwargs)

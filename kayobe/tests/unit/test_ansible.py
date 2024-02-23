@@ -259,7 +259,7 @@ class TestCase(unittest.TestCase):
             "verbose_level": 0,
             "check": True,
             "diff": True,
-            "continue_on_unreachable": True,
+            "collect_stats": True,
         }
         ansible.run_playbooks(parsed_args, ["playbook1.yml", "playbook2.yml"],
                               **kwargs)
@@ -408,8 +408,13 @@ class TestCase(unittest.TestCase):
         vault.add_args(parser)
         parsed_args = parser.parse_args([])
         mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
-        self.assertRaises(SystemExit,
-                          ansible.run_playbooks, parsed_args, ["command"])
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            ansible.run_playbooks(parsed_args, ["command"])
+        self.assertEqual(cm.exception.exit_code, 1)
+        expected_cmd = ("ansible-playbook --inventory "
+                        "/etc/kayobe/inventory command")
+        self.assertEqual(cm.exception.cmd, expected_cmd)
+        self.assertIsNone(cm.exception.stats)
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(ansible, "_get_vars_files")
@@ -417,25 +422,22 @@ class TestCase(unittest.TestCase):
     @mock.patch.object(tempfile, "mkdtemp")
     @mock.patch.object(stats.Stats, "from_json")
     @mock.patch.object(shutil, "rmtree")
-    def _test_run_playbooks_continue_on_unreachable(
-            self, run_stats, expected_exc,
-            mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+    def test_run_playbooks_collect_stats(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
             mock_vars, mock_run):
-        mock_vars.return_value = ["/etc/kayobe/vars-file1.yml"]
-        mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
         mock_mkdtemp.return_value = "/path/to/tmpdir"
-        mock_from_json.return_value = run_stats
+        mock_from_json.return_value = stats.Stats()
         parser = argparse.ArgumentParser()
         ansible.add_args(parser)
         vault.add_args(parser)
         parsed_args = parser.parse_args([])
-        self.assertRaises(expected_exc,
-                          ansible.run_playbooks, parsed_args,
-                          ["playbook1.yml"], continue_on_unreachable=True)
+
+        ansible.run_playbooks(parsed_args, ["playbook1.yml"],
+                              collect_stats=True)
+
         expected_cmd = [
             "ansible-playbook",
             "--inventory", "/etc/kayobe/inventory",
-            "-e", "@/etc/kayobe/vars-file1.yml",
             "playbook1.yml",
         ]
         expected_env = {
@@ -447,33 +449,47 @@ class TestCase(unittest.TestCase):
         mock_vars.assert_called_once_with(["/etc/kayobe"])
         mock_rmtree.assert_called_once_with("/path/to/tmpdir")
 
-    def test_run_playbooks_continue_on_unreachable(self):
-        # Execution reached the end with 1 unreachable host and no failed
-        # hosts - continue.
-        run_stats = stats.Stats(
-            num_failures=0, num_unreachable=1,
-            failures=[], unreachable=[],
-            no_hosts_remaining=False)
-        self._test_run_playbooks_continue_on_unreachable(
-            run_stats, exception.NonFatalError)
+    @mock.patch.object(utils, "run_command")
+    @mock.patch.object(ansible, "_get_vars_files")
+    @mock.patch.object(ansible, "_validate_args")
+    @mock.patch.object(tempfile, "mkdtemp")
+    @mock.patch.object(stats.Stats, "from_json")
+    @mock.patch.object(shutil, "rmtree")
+    def test_run_playbooks_collect_stats_error(
+            self, mock_rmtree, mock_from_json, mock_mkdtemp, mock_validate,
+            mock_vars, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(1, "dummy")
+        mock_mkdtemp.return_value = "/path/to/tmpdir"
+        mock_from_json.return_value = stats.Stats(num_failures=1)
+        parser = argparse.ArgumentParser()
+        ansible.add_args(parser)
+        vault.add_args(parser)
+        parsed_args = parser.parse_args([])
 
-    def test_run_playbooks_continue_on_unreachable_failures(self):
-        # Execution reached the end with 1 unreachable host and 1 failed
-        # host - exit.
-        run_stats = stats.Stats(
-            num_failures=1, num_unreachable=1,
-            failures=[], unreachable=[],
-            no_hosts_remaining=False)
-        self._test_run_playbooks_continue_on_unreachable(run_stats, SystemExit)
+        with self.assertRaises(exception.AnsibleCommandError) as cm:
+            ansible.run_playbooks(parsed_args, ["playbook1.yml"],
+                                  collect_stats=True)
 
-    def test_run_playbooks_continue_on_unreachable_no_hosts_remaining(self):
-        # Execution did not reach the end 1 unreachable host and no failed
-        # hosts - exit.
-        run_stats = stats.Stats(
-            num_failures=0, num_unreachable=1,
-            failures=[], unreachable=[],
-            no_hosts_remaining=True)
-        self._test_run_playbooks_continue_on_unreachable(run_stats, SystemExit)
+        self.assertEqual(cm.exception.exit_code, 1)
+        expected_cmd = ("ansible-playbook --inventory "
+                        "/etc/kayobe/inventory playbook1.yml")
+        self.assertEqual(cm.exception.cmd, expected_cmd)
+        self.assertEqual(cm.exception.stats.__dict__,
+                         stats.Stats(num_failures=1).__dict__)
+
+        expected_cmd = [
+            "ansible-playbook",
+            "--inventory", "/etc/kayobe/inventory",
+            "playbook1.yml",
+        ]
+        expected_env = {
+            "KAYOBE_CONFIG_PATH": "/etc/kayobe",
+            "ANSIBLE_KOLLA_STATS_PATH": "/path/to/tmpdir/stats.json"
+        }
+        mock_run.assert_called_once_with(expected_cmd, check_output=False,
+                                         quiet=False, env=expected_env)
+        mock_vars.assert_called_once_with(["/etc/kayobe"])
+        mock_rmtree.assert_called_once_with("/path/to/tmpdir")
 
     @mock.patch.object(shutil, 'rmtree')
     @mock.patch.object(utils, 'read_config_dump_yaml_file')

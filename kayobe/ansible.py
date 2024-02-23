@@ -243,7 +243,7 @@ def run_playbooks(parsed_args, playbooks,
                   extra_vars=None, limit=None, tags=None, quiet=False,
                   check_output=False, verbose_level=None, check=None,
                   ignore_limit=False, list_tasks=None, diff=None,
-                  continue_on_unreachable=False):
+                  collect_stats=False):
     """Run a Kayobe Ansible playbook."""
     _validate_args(parsed_args, playbooks)
     cmd = build_args(parsed_args, playbooks,
@@ -252,7 +252,7 @@ def run_playbooks(parsed_args, playbooks,
                      ignore_limit=ignore_limit, list_tasks=list_tasks,
                      diff=diff)
     stats_path: Optional[str] = None
-    if continue_on_unreachable:
+    if collect_stats:
         stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
     env = _get_environment(parsed_args, stats_path)
     try:
@@ -262,17 +262,11 @@ def run_playbooks(parsed_args, playbooks,
                   ", ".join(playbooks), e.returncode)
         if check_output:
             LOG.error("The output was:\n%s", e.output)
-        if continue_on_unreachable:
-            # Allow to continue if execution reached the end without any
-            # failures.
+        run_stats = None
+        if collect_stats:
             run_stats = stats.Stats.from_json(stats_path)
-            if (run_stats.num_unreachable > 0 and
-                    run_stats.completed_without_failures()):
-                LOG.info(f"Continuing with {run_stats.num_unreachable} "
-                         "unreachable hosts")
-                raise exception.NonFatalError(" ".join(cmd), e.returncode,
-                                              run_stats)
-        sys.exit(e.returncode)
+        raise exception.AnsibleCommandError(" ".join(cmd), e.returncode,
+                                            run_stats)
     finally:
         if stats_path:
             shutil.rmtree(os.path.dirname(stats_path))

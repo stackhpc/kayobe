@@ -189,7 +189,7 @@ def _get_environment(parsed_args, stats_path: Optional[str]):
 
 def run(parsed_args, command, inventory_filename, extra_vars=None,
         tags=None, quiet=False, verbose_level=None, extra_args=None,
-        limit=None, continue_on_unreachable=False):
+        limit=None, collect_stats=False):
     """Run a Kolla Ansible command."""
     _validate_args(parsed_args, inventory_filename)
     cmd = build_args(parsed_args, command,
@@ -199,24 +199,18 @@ def run(parsed_args, command, inventory_filename, extra_vars=None,
                      extra_args=extra_args,
                      limit=limit)
     stats_path: Optional[str] = None
-    if continue_on_unreachable:
+    if collect_stats:
         stats_path = os.path.join(tempfile.mkdtemp(), "stats.json")
     env = _get_environment(parsed_args, stats_path)
     try:
         utils.run_command(" ".join(cmd), quiet=quiet, shell=True, env=env)
     except subprocess.CalledProcessError as e:
         LOG.error("kolla-ansible %s exited %d", command, e.returncode)
-        if continue_on_unreachable:
-            # Allow to continue if execution reached the end without any
-            # failures.
+        run_stats = None
+        if collect_stats:
             run_stats = stats.Stats.from_json(stats_path)
-            if (run_stats.num_unreachable > 0 and
-                    run_stats.completed_without_failures()):
-                LOG.info(f"Continuing with {run_stats.num_unreachable} "
-                         "unreachable hosts")
-                raise exception.NonFatalError(" ".join(cmd[3:]), e.returncode,
-                                              run_stats)
-        sys.exit(e.returncode)
+        raise exception.AnsibleCommandError(" ".join(cmd[3:]),
+                                            e.returncode, run_stats)
     finally:
         if stats_path:
             shutil.rmtree(os.path.dirname(stats_path))
