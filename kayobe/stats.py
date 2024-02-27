@@ -13,7 +13,10 @@
 # under the License.
 
 import json
+import logging
 from typing import List
+
+LOG = logging.getLogger(__name__)
 
 
 class Stats(object):
@@ -31,6 +34,10 @@ class Stats(object):
 
     def __init__(self, num_failures=0, num_unreachable=0, failures=None,
                  unreachable=None, no_hosts_remaining=False, **kwargs):
+        if kwargs:
+            LOG.warning(f"Unexpected Ansible stats returned by "
+                        "openstack.kolla.stats callback plugin: "
+                        "{kwargs.keys()}")
         self.num_failures = num_failures
         self.num_unreachable = num_unreachable
         self.failures = failures or []
@@ -40,8 +47,20 @@ class Stats(object):
     @classmethod
     def from_json(cls, json_path: str):
         """Construct a Stats object from statistics in a JSON file."""
-        with open(json_path) as f:
-            return cls(**json.load(f))
+        try:
+            with open(json_path) as f:
+                return cls(**json.load(f))
+        except (FileNotFoundError, PermissionError) as exc:
+            # This could be caused by:
+            # - incorrect config preventing the callback plugin from loading
+            # - an early failure in Ansible preventing the v2_on_stats callback
+            #   from executing
+            # - failure to create the stats file
+            # - something else
+            LOG.error(f"Unable to open Ansible stats JSON file: {exc}")
+            LOG.error(f"Is the openstack.kolla.stats plugin included in the "
+                      "[defaults] callbacks_enabled list in ansible.cfg?")
+            return None
 
     def completed_without_failures(self) -> bool:
         """Return whether execution continued to completion without failures.
