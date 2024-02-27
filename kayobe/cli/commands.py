@@ -131,7 +131,8 @@ class Command(CliffCommand):
             # 2: failed hosts
             # 4: unreachable hosts
             # 255: unknown error
-            # So let's OR 32 with the other return codes to indicate a non-fatal error.
+            # So let's OR 32 with the other return codes to indicate a
+            # non-fatal error.
             return_code |= 32
         for index, error in enumerate(self.non_fatal_errors):
             stats = yaml.dump(error.stats.__dict__, default_flow_style=False)

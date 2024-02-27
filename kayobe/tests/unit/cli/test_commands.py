@@ -154,7 +154,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
             "/command", 2, run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         mock_run.assert_called_once_with(mock.ANY,
                                          collect_stats=True,
                                          verbose_level=0)
@@ -181,7 +181,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
 
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         expected_calls = [
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
@@ -211,7 +211,7 @@ class TestKayobeAnsibleMixin(unittest.TestCase):
         ]
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         expected_calls = [
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
@@ -380,7 +380,7 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             "/command", 2, run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         mock_run.assert_called_once_with(mock.ANY,
                                          collect_stats=True,
                                          verbose_level=0)
@@ -407,7 +407,7 @@ class TestKollaAnsibleMixin(unittest.TestCase):
             "/command", 2, run_stats)
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         expected_calls = [
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
@@ -438,7 +438,7 @@ class TestKollaAnsibleMixin(unittest.TestCase):
         ]
         parsed_args, result = _run_command(TestCommand,
                                            ["--continue-on-unreachable"])
-        self.assertEqual(result, 32|2)
+        self.assertEqual(result, 32 | 2)
         expected_calls = [
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
             mock.call(mock.ANY, collect_stats=True, verbose_level=0),
@@ -2226,7 +2226,7 @@ class TestCommands(unittest.TestCase):
         parsed_args = parser.parse_args(["--continue-on-unreachable"])
 
         result = command.run(parsed_args)
-        self.assertEqual(32|2|4, result)
+        self.assertEqual(32 | 2 | 4, result)
 
         expected_calls = [
             mock.call(
