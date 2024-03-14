@@ -91,6 +91,8 @@ def _vlan_netdev(context, name, inventory_hostname):
     device = networks.net_interface(context, name, inventory_hostname)
     mtu = networks.net_mtu(context, name, inventory_hostname)
     vlan = networks.net_vlan(context, name, inventory_hostname)
+    ingress_qos_maps = networks.net_ingress_qos_maps(context, name, inventory_hostname)
+    egress_qos_maps = networks.net_ingress_qos_maps(context, name, inventory_hostname)
     config = [
         {
             'NetDev': [
@@ -102,6 +104,8 @@ def _vlan_netdev(context, name, inventory_hostname):
         {
             'VLAN': [
                 {'Id': vlan},
+                {'IngressQOSMaps': ingress_qos_maps},
+                {'EgressQOSMaps': egress_qos_maps},
             ]
         }
     ]
