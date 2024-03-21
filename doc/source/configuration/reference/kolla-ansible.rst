@@ -268,10 +268,6 @@ The following variables affect TLS encryption of the public API.
     A TLS certificate bundle to use for the public API endpoints, if
     ``kolla_enable_tls_external`` is ``true``.  Note that this should be
     formatted as a literal style block scalar.
-``kolla_external_fqdn_cacert``
-    Path to a CA certificate file to use for the ``OS_CACERT`` environment
-    variable in openrc files when TLS is enabled, instead of Kolla Ansible's
-    default.
 
 The following variables affect TLS encryption of the internal API. Currently
 this requires all Kolla images to be built with the API's root CA trusted.
@@ -282,10 +278,18 @@ this requires all Kolla images to be built with the API's root CA trusted.
     A TLS certificate bundle to use for the internal API endpoints, if
     ``kolla_enable_tls_internal`` is ``true``.  Note that this should be
     formatted as a literal style block scalar.
-``kolla_internal_fqdn_cacert``
+
+The following variables affect the generated ``admin-openrc.sh`` and
+``public-openrc.sh`` environment files.
+
+``kolla_public_openrc_cacert``
     Path to a CA certificate file to use for the ``OS_CACERT`` environment
-    variable in openrc files when TLS is enabled, instead of Kolla Ansible's
-    default.
+    variable in the ``public-openrc.sh`` file when TLS is enabled, instead of
+    ``kolla_admin_openrc_cacert``.
+``kolla_admin_openrc_cacert``
+    Path to a CA certificate file to use for the ``OS_CACERT`` environment
+    variable in the ``admin-openrc.sh`` and ``public-openrc.sh`` files when TLS
+    is enabled, instead of Kolla Ansible's default.
 
 Example: enabling TLS for the public API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -302,7 +306,7 @@ Here is an example:
      -----BEGIN CERTIFICATE-----
      ...
      -----END CERTIFICATE-----
-   kolla_external_fqdn_cacert: /path/to/ca/certificate/bundle
+   kolla_admin_openrc_cacert: /path/to/ca/certificate/bundle
 
 Example: enabling TLS for the internal API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -319,7 +323,7 @@ Here is an example:
      -----BEGIN CERTIFICATE-----
      ...
      -----END CERTIFICATE-----
-   kolla_internal_fqdn_cacert: /path/to/ca/certificate/bundle
+   kolla_admin_openrc_cacert: /path/to/ca/certificate/bundle
 
 Other certificates
 ------------------
@@ -592,27 +596,35 @@ variable, if present. The file is generated to
 ``$KAYOBE_CONFIG_PATH/kolla/passwords.yml``, and should be stored along with
 other Kayobe configuration files. This file should not be manually modified.
 
-``kolla_ansible_custom_passwords``
-    Dictionary containing custom passwords to add or override in the Kolla
-    passwords file. Default is ``{{ kolla_ansible_default_custom_passwords
-    }}``, which contains SSH keys for use by Kolla Ansible and Bifrost.
-
 Configuring Custom Passwords
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to write additional passwords to ``passwords.yml``, set the kayobe
-variable ``kolla_ansible_custom_passwords`` in
-``$KAYOBE_CONFIG_PATH/kolla.yml``.
+The following variables are used to configure custom passwords:
+
+* ``kolla_ansible_default_custom_passwords``: Dictionary containing default
+  custom passwords, required by Kolla Ansible. Contains SSH keys authorized by
+  kolla user on Kolla hosts, SSH keys authorized in hosts deployed by Bifrost,
+  Docker Registry password and compute libVirt custom passwords.
+* ``kolla_ansible_extra_custom_passwords``: Dictionary containing extra custom
+  passwords to add or override in the Kolla passwords file. Default is an empty
+  dictionary.
+* ``kolla_ansible_custom_passwords``: Dictionary containing custom passwords to
+  add or override in the Kolla passwords file. Default is the combination of
+  the ``kolla_ansible_default_custom_passwords`` and
+  ``kolla_ansible_extra_custom_passwords``.
+
+In this example we add our own ``my_custom_password`` and override
+``keystone_admin_password``:
 
 .. code-block:: yaml
    :caption: ``$KAYOBE_CONFIG_PATH/kolla.yml``
 
    ---
-   # Dictionary containing custom passwords to add or override in the Kolla
-   # passwords file.
-   kolla_ansible_custom_passwords: >
-     {{ kolla_ansible_default_custom_passwords |
-        combine({'my_custom_password': 'correcthorsebatterystaple'}) }}
+   # Dictionary containing extra custom passwords to add or override in the
+   # Kolla passwords file.
+   kolla_ansible_extra_custom_passwords:
+     my_custom_password: 'correcthorsebatterystaple'
+     keystone_admin_password: 'superduperstrongpassword'
 
 Control Plane Services
 ======================

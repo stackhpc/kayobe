@@ -16,12 +16,18 @@ import base64
 from collections import defaultdict
 import glob
 import graphlib
+try:
+    from importlib.metadata import Distribution
+except ImportError:  # for Python<3.8
+    from importlib_metadata import Distribution
+import json
 import logging
 import os
 import shutil
 import subprocess
 import sys
 
+from ansible.parsing.yaml.loader import AnsibleLoader
 import yaml
 
 from kayobe import exception
@@ -50,10 +56,30 @@ def _detect_install_prefix(path):
     return prefix_path
 
 
+def _get_direct_url(dist):
+    direct_url = os.path.join(dist._path, 'direct_url.json')
+    if os.path.isfile(direct_url):
+        with open(direct_url, 'r') as f:
+            direct_url_content = json.loads(f.readline().strip())
+            url = direct_url_content['url']
+            prefix = 'file://'
+            if url.startswith(prefix):
+                return url[len(prefix):]
+
+    return None
+
+
 def _get_base_path():
     override = os.environ.get("KAYOBE_DATA_FILES_PATH")
     if override:
         return os.path.join(override)
+
+    kayobe_dist = list(Distribution.discover(name="kayobe"))
+    if kayobe_dist:
+        direct_url = _get_direct_url(kayobe_dist[0])
+        if direct_url:
+            return direct_url
+
     egg_glob = os.path.join(
         sys.prefix, 'lib*', 'python*', '*-packages', 'kayobe.egg-link'
     )
@@ -68,7 +94,7 @@ def _get_base_path():
         return os.path.join(prefix, "share", "kayobe")
 
     # Assume uninstalled
-    return os.path.join(os.path.realpath(__file__), "..")
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
 
 
 def galaxy_role_install(role_file, roles_path, force=False):
@@ -131,11 +157,28 @@ def read_yaml_file(path):
     try:
         content = read_file(path)
     except IOError as e:
-        print("Failed to open config dump file %s: %s" %
+        print("Failed to open YAML file %s: %s" %
               (path, repr(e)))
         sys.exit(1)
     try:
         return yaml.safe_load(content)
+    except yaml.YAMLError as e:
+        print("Failed to decode YAML file %s: %s" %
+              (path, repr(e)))
+        sys.exit(1)
+
+
+def read_config_dump_yaml_file(path):
+    """Read and decode a configuration dump YAML file."""
+    try:
+        content = read_file(path)
+    except IOError as e:
+        print("Failed to open config dump file %s: %s" %
+              (path, repr(e)))
+        sys.exit(1)
+    try:
+        # AnsibleLoader supports loading vault encrypted variables.
+        return AnsibleLoader(content).get_single_data()
     except yaml.YAMLError as e:
         print("Failed to decode config dump YAML file %s: %s" %
               (path, repr(e)))
