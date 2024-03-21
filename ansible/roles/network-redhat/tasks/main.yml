@@ -17,6 +17,31 @@
   when: resolv_is_managed | bool
   become: True
 
+- name: Ensure NetworkManager DNS config is present only if required
+  become: true
+  community.general.ini_file:
+    path: /etc/NetworkManager/NetworkManager.conf
+    section: main
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    state: "{{ 'present' if resolv_is_managed | bool else 'absent'}}"
+  loop:
+    - option: dns
+      value: none
+    - option: rc-manager
+      value: unmanaged
+  when:
+    - ansible_facts.os_family == "RedHat" and ansible_facts.distribution_major_version == "9"
+  register: dns_config_task
+
+- name: Reload NetworkManager with DNS config
+  become: true
+  systemd:
+    name: NetworkManager
+    state: reloaded
+    daemon_reload: yes
+  when: dns_config_task is changed
+
 - name: Configure network interfaces (RedHat)
   import_role:
     name: MichaelRigart.interfaces
@@ -25,7 +50,7 @@
     interfaces_ether_interfaces: >
       {{ network_interfaces |
          net_select_ethers |
-         map('net_interface_obj') |
+         map('net_interface_obj', names=network_interfaces) |
          list }}
     interfaces_bridge_interfaces: >
       {{ network_interfaces |

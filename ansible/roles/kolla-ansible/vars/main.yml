@@ -113,6 +113,7 @@ kolla_feature_flags:
   - gnocchi
   - gnocchi_statsd
   - grafana
+  - grafana_external
   - hacluster
   - haproxy
   - haproxy_memcached
@@ -152,6 +153,7 @@ kolla_feature_flags:
   - keystone_federation
   - keystone_horizon_policy_file
   - kibana
+  - kibana_external
   - kuryr
   - loadbalancer
   - magnum
@@ -164,6 +166,8 @@ kolla_feature_flags:
   - mariabackup
   - mariadb
   - masakari
+  - masakari_hostmonitor
+  - masakari_instancemonitor
   - memcached
   - mistral
   - monasca
@@ -206,6 +210,7 @@ kolla_feature_flags:
   - placement
   - prometheus
   - prometheus_alertmanager
+  - prometheus_alertmanager_external
   - prometheus_blackbox_exporter
   - prometheus_cadvisor
   - prometheus_ceph_mgr_exporter
@@ -215,6 +220,7 @@ kolla_feature_flags:
   - prometheus_haproxy_exporter
   - prometheus_libvirt_exporter
   - prometheus_memcached_exporter
+  - prometheus_msteams
   - prometheus_mysqld_exporter
   - prometheus_node_exporter
   - prometheus_openstack_exporter
