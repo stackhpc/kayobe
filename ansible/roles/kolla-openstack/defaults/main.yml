@@ -816,12 +816,6 @@ kolla_extra_placement:
 kolla_enable_prometheus: false
 
 ###############################################################################
-# RabbitMQ configuration.
-
-# Whether to enable RabbitMQ.
-kolla_enable_rabbitmq:
-
-###############################################################################
 # Sahara configuration.
 
 # Whether to enable sahara.
