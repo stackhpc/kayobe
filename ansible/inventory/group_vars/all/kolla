@@ -131,6 +131,8 @@ overcloud_container_image_regex_map:
     enabled: "{{ kolla_enable_barbican | bool }}"
   - regex: ^blazar
     enabled: "{{ kolla_enable_blazar | bool }}"
+  - regex: ^caso
+    enabled: "{{ kolla_enable_caso | bool }}"
   - regex: ^ceilometer
     enabled: "{{ kolla_enable_ceilometer | bool }}"
   - regex: ^cinder
@@ -202,7 +204,7 @@ overcloud_container_image_regex_map:
   - regex: "neutron-\\(server\\|metadata-agent\\)"
     enabled: "{{ kolla_enable_neutron | bool }}"
   - regex: "neutron-\\(dhcp\\|l3\\|linuxbridge\\|openvswitch\\)-agent"
-    enabled: "{{ kolla_enable_neutron | bool and not kolla_enable_ovn | bool}}"
+    enabled: "{{ kolla_build_neutron_ovs | default(kolla_enable_neutron | bool and not kolla_enable_ovn | bool) }}"
   - regex: neutron-mlnx-agent
     enabled: "{{ kolla_enable_neutron_mlnx | bool }}"
   - regex: neutron-sriov-agent
@@ -360,6 +362,9 @@ kolla_overcloud_inventory_top_level_group_map:
   compute:
     groups:
       - compute
+  compute-vgpu:
+    groups:
+      - compute-vgpu
   monitoring:
     groups:
       - monitoring
@@ -511,6 +516,7 @@ kolla_enable_rabbitmq: "yes"
 kolla_enable_aodh: "no"
 kolla_enable_barbican: "no"
 kolla_enable_blazar: "no"
+kolla_enable_caso: "no"
 kolla_enable_ceilometer: "no"
 kolla_enable_central_logging: "no"
 kolla_enable_cinder: "no"
@@ -565,6 +571,16 @@ kolla_enable_trove: "no"
 kolla_enable_vitrage: "no"
 kolla_enable_watcher: "no"
 kolla_enable_zun: "no"
+
+###############################################################################
+# Kolla custom config generation.
+
+# Feature flag to add $KAYOBE_CONFIG_PATH to the list of search paths used
+# when searching for Kolla custom service configuration. Only has an effect in
+# a multiple environments setup. This allows you to configure merging between
+# your environment and the base layer. Defaults to true. Set to false for
+# backwards compatibility.
+kolla_openstack_custom_config_environment_merging_enabled: true
 
 ###############################################################################
 # Passwords and credentials.
