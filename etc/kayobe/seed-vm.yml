@@ -61,6 +61,12 @@
 #
 #seed_vm_interfaces:
 
+# Boot firmware - 'efi' or 'bios' - with latter being the default
+#seed_vm_boot_firmware:
+
+# Machine type
+#seed_vm_machine:
+
 ###############################################################################
 # Dummy variable to allow Ansible to accept this file.
 workaround_ansible_issue_8743: yes

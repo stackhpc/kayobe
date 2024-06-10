@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Adds support for specifying ``boot_firmware`` and ``machine``
+    variables to seed and infra vms.
+    Bumps stackhpc.libvirt-vm Ansible role to ``v1.16.1``.
