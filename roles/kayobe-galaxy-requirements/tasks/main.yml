@@ -14,7 +14,11 @@
     new_requirement:
       name: "file://{{ ansible_collection_kolla_src_dir }}"
       type: git
+    version:
       version: "{{ kayobe_galaxy_requirements_branch }}"
+    # NOTE(wszusmki): Use version checked out by Zuul so Depends-On works and only override version
+    # for previous release.
+    new_requirement_with_version: "{{ new_requirement | combine(version) if kayobe_galaxy_requirements_branch else new_requirement }}"
     new_requirements:
       collections: "{{ (old_requirements.collections | rejectattr('name', 'search', 'ansible-collection-kolla') | list) + [new_requirement] }}"
       roles: "{{ old_requirements.roles | default([]) }}"
