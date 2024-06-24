@@ -4,19 +4,13 @@
 ###############################################################################
 # Authentication configuration.
 
-# For Arista switches, this defines a 'provider' argument to the eos_*
-# modules.
-switch_arista_provider:
-  host: "{{ ansible_host }}"
-  username: "{{ ansible_user }}"
-  password: "{{ ansible_ssh_pass }}"
-  transport: cli
-  authorize: yes
-  auth_pass: "{{ switch_auth_pass }}"
-  timeout: "{{ switch_arista_timeout }}"
-
-###############################################################################
-# Timeout in seconds for completion of the switch config as a transaction
-switch_arista_timeout: 60
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: arista.eos.eos
+ansible_user:
+ansible_password:
+ansible_become: true
+ansible_become_method: enable
+ansible_become_password:
+ansible_ssh_common_args:
 
 ...
