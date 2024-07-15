@@ -98,6 +98,8 @@ kolla_openstack_custom_config_include_globs_default:
     glob: ironic.conf
   - enabled: '{{ kolla_enable_ironic | bool }}'
     glob: ironic/**
+  - enabled: '{{ kolla_enable_ironic | bool }}'
+    glob: ironic-inspector/**
   - enabled: '{{ kolla_enable_keepalived | bool }}'
     glob: keepalived/**
   - enabled: '{{ kolla_enable_keystone | bool }}'
