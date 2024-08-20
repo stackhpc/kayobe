@@ -52,7 +52,8 @@ class TestCase(unittest.TestCase):
                                           "install", "--collections-path",
                                           "/path/to/collections",
                                           "--requirements-file",
-                                          "/path/to/collection/file"])
+                                          "/path/to/collection/file"],
+                                         env=env)
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(utils, "read_yaml_file")
@@ -81,7 +82,8 @@ class TestCase(unittest.TestCase):
                                           "install", "--collections-path",
                                           "/path/to/collections",
                                           "--requirements-file",
-                                          "/path/to/collection/file"])
+                                          "/path/to/collection/file"],
+                                         env=env)
 
     @mock.patch.object(utils, "run_command")
     @mock.patch.object(utils, "read_yaml_file")
