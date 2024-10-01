@@ -7,8 +7,10 @@ collections:
     version: 1.1.1
   - name: stackhpc.linux
     version: 1.1.0
-  - name: nvidia.nvue
-    version: 1.2.0
+# NOTE(mnasiadka): Use nvue collection fork until https://gitlab.com/nvidia-networking/systems-engineering/nvue/-/merge_requests/26 is merged
+  - name: https://github.com/stackhpc/ansible-nvidia-nvue.git
+    type: git
+    version: stackhpc
 
 roles:
   - src: ahuffman.resolv
