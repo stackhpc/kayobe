@@ -102,10 +102,6 @@ class ActionModule(ActionBase):
             # Get the network interface for this network.
             iface = ("{{ '%s' | net_interface }}" % net_name)
             iface = self._templar.template(iface)
-            if iface:
-                # Ansible fact names replace dashes with underscores.
-                # FIXME(mgoddard): Is this still required?
-                iface = iface.replace('-', '_')
             if required and not iface:
                 msg = ("Required network '%s' (%s) does not have an interface "
                        "configured for this host" % (net_name, description))
@@ -173,12 +169,13 @@ class ActionModule(ActionBase):
             # One external network interface may be referenced by multiple
             # external networks. Check if they have a physical_network
             # attribute set, and if so, whether they are consistent.
-            iface_physical_networks = set()
+            iface_physical_networks = []
             for iface_network in iface_networks:
                 physical_network = self._templar.template(
                     "{{ '%s' | net_physical_network }}" % iface_network)
-                if physical_network:
-                    iface_physical_networks.add(physical_network)
+                if (physical_network and
+                        physical_network not in iface_physical_networks):
+                    iface_physical_networks.append(physical_network)
             if iface_physical_networks:
                 if len(iface_physical_networks) > 1:
                     raise ConfigError(
@@ -186,7 +183,7 @@ class ActionModule(ActionBase):
                         "external networks %s using interface %s: %s" %
                         (", ".join(iface_networks), interface,
                          ", ".join(iface_physical_networks)))
-                neutron_physical_networks += list(iface_physical_networks)
+                neutron_physical_networks += iface_physical_networks
             else:
                 missing_physical_networks += iface_networks
         facts = {
@@ -204,3 +201,4 @@ class ActionModule(ActionBase):
             facts["kolla_neutron_physical_networks"] = ",".join(
                 neutron_physical_networks)
         return facts
+
