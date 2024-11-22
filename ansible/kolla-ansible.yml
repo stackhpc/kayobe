@@ -169,11 +169,11 @@
           - var_name: "kolla_network_interface"
             description: "Default network"
             network: "{{ internal_net_name }}"
-            required: True
+            required: False
           - var_name: "kolla_api_interface"
             description: "API network"
             network: "{{ internal_net_name }}"
-            required: True
+            required: False
           - var_name: "kolla_storage_interface"
             description: "Storage network"
             network: "{{ storage_net_name }}"
