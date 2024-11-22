@@ -189,6 +189,11 @@ def net_interface(context, name, inventory_hostname=None):
 
 
 @jinja2.pass_context
+def net_type(context, name, inventory_hostname=None):
+    return net_attr(context, name, 'type', inventory_hostname)
+
+
+@jinja2.pass_context
 def net_no_ip(context, name, inventory_hostname=None):
     return net_attr(context, name, 'no_ip', inventory_hostname)
 
@@ -425,6 +430,7 @@ def net_interface_obj(context, name, inventory_hostname=None, names=None):
     zone = net_zone(context, name, inventory_hostname)
     vip_address = net_vip_address(context, name, inventory_hostname)
     allowed_addresses = [vip_address] if vip_address else None
+    _type = net_type(context, name, inventory_hostname)
     _validate_rules(rules)
     interface = {
         'device': device,
@@ -441,6 +447,7 @@ def net_interface_obj(context, name, inventory_hostname=None, names=None):
         'zone': zone,
         'allowed_addresses': allowed_addresses,
         'onboot': 'yes',
+        'type': _type,
     }
     interface = {k: v for k, v in interface.items() if v is not None}
     return interface

@@ -24,8 +24,9 @@ roles:
   - src: jriguera.configdrive
     # There are no versioned releases of this role.
     version: acd08fd126d0e442ab8b3bc518e37761390d8c2f
-  - src: MichaelRigart.interfaces
-    version: v1.14.4
+  - name: MichaelRigart.interfaces
+    src: git+https://github.com/stackhpc/ansible-role-interfaces
+    version: bugfix/infiniband
   - src: mrlesmithjr.chrony
     version: v0.1.4
   - src: mrlesmithjr.manage_lvm
