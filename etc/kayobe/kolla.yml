@@ -420,6 +420,7 @@
 #kolla_enable_prometheus_blackbox_exporter:
 #kolla_enable_prometheus_cadvisor:
 #kolla_enable_prometheus_ceph_mgr_exporter:
+#kolla_enable_prometheus_docker_metrics:
 #kolla_enable_prometheus_elasticsearch_exporter:
 #kolla_enable_prometheus_etcd_integration:
 #kolla_enable_prometheus_fluentd_integration:

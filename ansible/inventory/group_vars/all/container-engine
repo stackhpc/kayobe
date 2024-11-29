@@ -48,6 +48,12 @@ docker_registry_mirrors: []
 # Enable live-restore on docker daemon
 docker_daemon_live_restore: false
 
+# Docker Prometheus metrics address
+docker_metrics_addr: "{{ (internal_net_name | net_ip) ~ ':' ~ docker_metrics_port if kolla_enable_prometheus_docker_metrics | bool else '' }}"
+
+# Docker Prometheus metrics port
+docker_metrics_port: 9323
+
 # Path to docker runtime directory. Default is "", which means to use the
 # default location: '/var/lib/docker'.
 docker_runtime_directory: ""

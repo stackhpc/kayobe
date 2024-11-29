@@ -313,6 +313,9 @@ kolla_selinux_state:
 # URL of docker registry
 docker_registry:
 
+# Whether to enable Prometheus metrics in Docker
+kolla_enable_prometheus_docker_metrics:
+
 ###############################################################################
 # Proxy configuration
 

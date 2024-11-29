@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Adds support for configuring the built-in Docker prometheus metrics
+    endpoint. This is disabled by default and can be enabled by setting
+    ``kolla_enable_prometheus_docker_metrics`` to ``true``.

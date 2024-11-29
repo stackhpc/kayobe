@@ -208,6 +208,7 @@ kolla_feature_flags:
   - prometheus_blackbox_exporter
   - prometheus_cadvisor
   - prometheus_ceph_mgr_exporter
+  - prometheus_docker_metrics
   - prometheus_elasticsearch_exporter
   - prometheus_etcd_integration
   - prometheus_fluentd_integration
