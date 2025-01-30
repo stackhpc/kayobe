@@ -200,6 +200,7 @@ kolla_feature_flags:
   - openvswitch
   - osprofiler
   - ovn
+  - ovn_sb_db_relay
   - ovs_dpdk
   - placement
   - prometheus
