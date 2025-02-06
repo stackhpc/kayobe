@@ -33,7 +33,7 @@
             os_images_git_elements: "{{ overcloud_dib_git_elements }}"
             os_images_upload: False
             os_images_force_rebuild: "{{ overcloud_host_image_force_rebuild }}"
-            os_images_architecture: "{{ overcloud_dib_architecture }}"
+            os_images_architecture: "{{ overcloud_dib_architecture | default('amd64') }}"
 
         - name: Copy overcloud host disk images into /httpboot
           copy:
