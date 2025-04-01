@@ -4,4 +4,4 @@ name: Tox Continuous Integration
   pull_request:
 jobs:
   tox:
-    uses: stackhpc/.github/.github/workflows/tox.yml@main
+    uses: stackhpc/.github/.github/workflows/tox.yml@focal-runners
