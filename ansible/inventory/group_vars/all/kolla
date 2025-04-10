@@ -52,6 +52,10 @@ kolla_node_custom_config_path: "{{ kolla_config_path }}/config"
 ###############################################################################
 # Kolla configuration.
 
+# Kolla base container image architecture. Options are "x86_64", "aarch64".
+# Default is "{{ ansible_facts.architecture }}"
+kolla_base_arch: "{{ ansible_facts.architecture }}"
+
 # Kolla base container image distribution. Options are "centos", "debian",
 # "rocky", "ubuntu". Default is {{ os_distribution }}.
 kolla_base_distro: "{{ os_distribution }}"
@@ -131,6 +135,8 @@ overcloud_container_image_regex_map:
     enabled: "{{ kolla_enable_barbican | bool }}"
   - regex: ^blazar
     enabled: "{{ kolla_enable_blazar | bool }}"
+  - regex: ^caso
+    enabled: "{{ kolla_enable_caso | bool }}"
   - regex: ^ceilometer
     enabled: "{{ kolla_enable_ceilometer | bool }}"
   - regex: ^cinder
@@ -396,6 +402,7 @@ kolla_overcloud_inventory_pass_through_host_vars_default:
   - "kolla_external_vip_interface"
   - "kolla_neutron_external_interfaces"
   - "kolla_neutron_bridge_names"
+  - "kolla_neutron_physical_networks"
 
 # List of names of additional host variables to pass through from kayobe hosts
 # to kolla-ansible hosts, if set. See also
@@ -426,6 +433,7 @@ kolla_overcloud_inventory_pass_through_host_vars_map_default:
   kolla_tunnel_interface: "tunnel_interface"
   kolla_neutron_external_interfaces: "neutron_external_interface"
   kolla_neutron_bridge_names: "neutron_bridge_name"
+  kolla_neutron_physical_networks: "neutron_physical_networks"
 
 # Dict mapping names of additional variables in
 # kolla_overcloud_inventory_pass_through_host_vars to the variable to use in
@@ -511,6 +519,7 @@ kolla_enable_rabbitmq: "yes"
 kolla_enable_aodh: "no"
 kolla_enable_barbican: "no"
 kolla_enable_blazar: "no"
+kolla_enable_caso: "no"
 kolla_enable_ceilometer: "no"
 kolla_enable_central_logging: "no"
 kolla_enable_cinder: "no"
