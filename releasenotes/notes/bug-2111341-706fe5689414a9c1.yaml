@@ -1,0 +1,12 @@
+---
+upgrade:
+  - |
+    Users are required to update their configuration according to `Juniper
+    Junos OS documentation
+    <https://docs.openstack.org/kayobe/latest/configuration/reference/physical-network.html#juniper-junos-os>`_.
+    This is due to the ``junos_config`` module dropping support for the
+    ``provider`` parameter.
+fixes:
+  - |
+    Fixes physical network configuration for Juniper Junos OS switches.
+    `LP#2111341 <https://bugs.launchpad.net/kayobe/+bug/2111341>`__
