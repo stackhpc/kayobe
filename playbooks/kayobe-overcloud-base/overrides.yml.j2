@@ -62,3 +62,8 @@ kolla_base_distro: "{% raw %}{{ 'rocky' if os_distribution == 'centos' else os_d
 
 # Support overriding container_engine
 container_engine: "{{ container_engine }}"
+
+# Disable ProxySQL which now fails on centos/rocky because Kolla images are
+# missing https://review.opendev.org/c/openstack/kolla/+/951741
+# TODO(priteau): Enable again once Rocky Linux 10 is supported
+kolla_enable_proxysql: "{% raw %}{{ false if os_distribution in ['centos', 'rocky'] else true }}{% endraw %}"
