@@ -29,55 +29,40 @@
     venv: "{{ virtualenv_path }}/openstack-cli"
     controller_host: "{{ groups['controllers'][0] }}"
   tasks:
-    - name: Check Ironic variables are defined
-      ansible.builtin.assert:
-        that:
-          - ironic_driver is defined
-          - ironic_driver_info is defined
-          - ironic_properties is defined
-          - ironic_resource_class is defined
-        fail_msg: One or more Ironic variables are undefined.
-
-    - block:
-        - name: Show baremetal node
-          ansible.builtin.command:
-            cmd: "{{ venv }}/bin/openstack baremetal node show {{ inventory_hostname }}"
-          register: node_show
-          failed_when:
-            - '"HTTP 404" not in node_show.stderr'
-            - node_show.rc != 0
-          changed_when: false
-
-        # NOTE: The openstack.cloud.baremetal_node module cannot be used in this
-        # script due to requiring a MAC address pre-defined, instead, this should
-        # be discovered by inpsection following this script.
-        #
-        # NOTE: IPMI address must be passed with Redfish address to ensure existing
-        # Ironic nodes match with new nodes during inspection.
-        - name: Create baremetal nodes
-          ansible.builtin.shell:
-            cmd: |
-              {{ venv }}/bin/openstack baremetal node create \
-              --name {{ inventory_hostname }} \
-              --driver {{ ironic_driver }} \
-              {% for key, value in ironic_driver_info.items() %}
-              --driver-info {{ key }}={{ value }} \
-              {% endfor %}
-              {% for key, value in ironic_properties.items() %}
-              --property {{ key }}={{ value }} \
-              {% endfor %}
-              --resource-class {{ ironic_resource_class }}
-          when:
-            - node_show.rc != 0
-
-        - name: Manage baremetal nodes
-          ansible.builtin.command:
-            cmd: "{{ venv }}/bin/openstack baremetal node manage {{ inventory_hostname }} --wait"
-          when:
-            - node_show.rc != 0
+    - name: Enroll baremetal nodes in Ironic
+      openstack.cloud.baremetal_node:
+        auth_type: "{{ openstack_auth_type }}"
+        auth: "{{ openstack_auth }}"
+        bios_interface: "{{ baremetal_compute_bios_interface }}"
+        boot_interface: "{{ baremetal_compute_boot_interface }}"
+        ca_cert: "{{ openstack_cacert | default(omit, true) }}"
+        chassis_id: "{{ baremetal_compute_chassis_id }}"
+        console_interface: "{{ baremetal_compute_console_interface }}"
+        deploy_interface: "{{ baremetal_compute_deploy_interface }}"
+        driver: "{{ baremetal_compute_driver }}"
+        driver_info: "{{ baremetal_compute_driver_info }}"
+        id: "{{ baremetal_compute_uuid }}"
+        inspect_interface: "{{ baremetal_compute_inspect_interface }}"
+        interface: "{{ openstack_interface | default(omit, true) }}"
+        management_interface: "{{ baremetal_compute_management_interface }}"
+        name: "{{ inventory_hostname }}"
+        # NOTE(jake): We need to add network_data to this module!
+        network_interface: "{{ baremetal_compute_network_interface }}"
+        nics: "{{ baremetal_compute_nics }}"
+        power_interface: "{{ baremetal_compute_power_interface }}"
+        properties: "{{ baremetal_compute_properties }}"
+        provision_state: "{{ baremetal_compute_provision_state }}"
+        raid_interface: "{{ baremetal_compute_raid_interface }}"
+        rescue_interface: "{{ baremetal_compute_rescue_interface }}"
+        resource_class: "{{ baremetal_compute_resource_class }}"
+        state: "{{ 'absent' if baremetal_compute_delete_nodes else 'present' }}"
+        storage_interface: "{{ baremetal_compute_storage_interface }}"
+        timeout: "{{ baremetal_compute_timeout }}"
+        vendor_interface: "{{ baremetal_compute_vendor_interface }}"
+        wait: "{{ baremetal_compute_wait }}"
       delegate_to: "{{ controller_host }}"
       vars:
         # NOTE: Without this, the controller's ansible_host variable will not
         # be respected when using delegate_to.
         ansible_host: "{{ hostvars[controller_host].ansible_host | default(controller_host) }}"
-      environment: "{{ openstack_auth_env }}"
+        ansible_python_interpreter: "{{ venv }}/bin/python3"

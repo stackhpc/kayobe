@@ -1,0 +1,86 @@
+---
+###############################################################################
+# Baremetal compute configuration.
+
+baremetal_compute_bios_interface:
+
+baremetal_compute_boot_interface:
+
+baremetal_compute_chassis_id:
+
+baremetal_compute_console_interface:
+
+baremetal_compute_deploy_interface:
+
+# Maintain compatibility with legacy 'ironic_driver' variable.
+baremetal_compute_driver: "{{ ironic_driver | default('redfish') }}"
+
+baremetal_compute_system_id:
+baremetal_compute_redfish_id_prefix: /redfish/v1/Systems/
+baremetal_compute_redfish_id: "{{ baremetal_compute_redfish_id_prefix + baremetal_compute_system_id }}"
+
+baremetal_compute_address: "{{ redfish_address }}"
+baremetal_compute_username: "{{ inspector_redfish_username }}"
+baremetal_compute_password: "{{ inspector_redfish_password }}"
+
+baremetal_compute_driver_info_default:
+  ipmi_address: "{{ baremetal_compute_address }}"
+  redfish_system_id: "{{ baremetal_compute_redfish_id }}"
+  redfish_address: "{{ baremetal_compute_address }}"
+  redfish_username: "{{ baremetal_compute_username | default(omit) if baremetal_compute_username | length > 0 else omit }}"
+  redfish_password: "{{ baremetal_compute_password | default(omit) if baremetal_compute_password | length > 0 else omit }}"
+
+baremetal_compute_driver_info_extra: {}
+
+# Maintain compatibility with legacy 'ironic_driver_info' variable.
+baremetal_compute_driver_info: >
+  {{ ironic_driver_info | default(
+     baremetal_compute_driver_info_default |
+     combine(baremetal_compute_driver_info_extra)) }}
+
+baremetal_compute_uuid: "{{ baremetal_compute_system_id }}"
+
+baremetal_compute_inspect_interface:
+
+baremetal_compute_management_interface:
+
+baremetal_compute_max_fail_percentage:
+
+baremetal_compute_network_interface:
+
+baremetal_compute_nics: []
+
+baremetal_compute_power_interface:
+
+baremetal_compute_properties_default:
+  capabilities: "{{ baremetal_compute_capabilities }}"
+
+baremetal_compute_properties_extra: {}
+
+# Maintain compatibility with legacy 'ironic_properties' variable.
+baremetal_compute_properties: >
+  {{ ironic_properties | default(
+     baremetal_compute_properties_default |
+     combine(baremetal_compute_properties_extra)) }}
+
+baremetal_compute_provision_state: enroll
+
+baremetal_compute_raid_interface:
+
+baremetal_compute_rescue_interface:
+
+# Maintain compatibility with legacy 'ironic_resource_class' variable.
+baremetal_compute_resource_class: "{{ ironic_resource_class | default('') }}"
+
+baremetal_compute_delete_nodes: false
+
+baremetal_compute_storage_interface:
+
+# Time to wait for state transition to complete, if baremetal_compute_wait
+# is True.
+baremetal_compute_timeout: "{{ inspector_inspection_timeout }}"
+
+baremetal_compute_vendor_interface:
+
+# Whether to wait for the state transition to complete.
+baremetal_compute_wait: True
