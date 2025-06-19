@@ -1,0 +1,27 @@
+---
+- hosts: primary
+  environment:
+    KAYOBE_CONFIG_SOURCE_PATH: "{{ kayobe_config_src_dir }}"
+  tasks:
+    # NOTE(mgoddard): Use the name zz-20-overrides.yml to ensure this takes
+    # precedence over the standard config files, but can control order with the
+    # priority (number after zz).
+    - name: Ensure kayobe-config override config file exists
+      template:
+        src: overrides.yml.j2
+        dest: "{{ kayobe_config_src_dir }}/etc/kayobe/zz-25-overrides.yml"
+
+    - name: Ensure baremetal inventory exists
+      template:
+        src: baremetal.j2
+        dest: "{{ kayobe_config_src_dir }}/etc/kayobe/inventory/baremetal"
+
+    - name: Ensure sushy-libvirt group_vars exists
+      template:
+        src: sushy-libvirt.j2
+        dest: "{{ kayobe_config_src_dir }}/etc/kayobe/inventory/group_vars/sushy-libvirt"
+
+    - name: Ensure sushy-libvirt-ipxe group_vars exists
+      template:
+        src: sushy-libvirt-ipxe.j2
+        dest: "{{ kayobe_config_src_dir }}/etc/kayobe/inventory/group_vars/sushy-libvirt-ipxe"

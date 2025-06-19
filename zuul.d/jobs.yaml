@@ -173,6 +173,19 @@
     nodeset: kayobe-rocky9
 
 - job:
+    name: kayobe-overcloud-sushy-base
+    parent: kayobe-overcloud-base
+    pre-run: playbooks/kayobe-overcloud-sushy-base/pre.yml
+    run: playbooks/kayobe-overcloud-sushy-base/run.yml
+
+- job:
+    name: kayobe-overcloud-sushy-rocky9
+    parent: kayobe-overcloud-sushy-base
+    vars:
+      kayobe_control_host_become: true
+    nodeset: kayobe-rocky9
+
+- job:
     name: kayobe-overcloud-upgrade-base
     parent: kayobe-base
     description: |

@@ -21,6 +21,7 @@
         - kayobe-overcloud-host-configure-ubuntu-noble
         - kayobe-overcloud-upgrade-rocky9
         - kayobe-overcloud-upgrade-ubuntu-noble
+        - kayobe-overcloud-sushy-rocky9
         - kayobe-seed-rocky9
         - kayobe-seed-rocky9-podman
         - kayobe-seed-ubuntu-noble

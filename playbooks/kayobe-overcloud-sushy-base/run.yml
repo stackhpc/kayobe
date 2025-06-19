@@ -1,0 +1,119 @@
+---
+- hosts: primary
+  environment:
+    KAYOBE_CONFIG_SOURCE_PATH: "{{ kayobe_config_src_dir }}"
+    KAYOBE_OVERCLOUD_GENERATE_CERTIFICATES: "{{ tls_enabled | ternary(1, 0) }}"
+    KAYOBE_VAULT_PASSWORD: 'test-password'
+    # TODO(mgoddard): Remove this when libvirt on host is used by default.
+    TENKS_CONFIG_PATH: "dev/tenks-deploy-config-compute{% if tls_enabled %}-libvirt-on-host{% endif %}.yml"
+  vars:
+    sushy_directory: "{{ kayobe_src_dir }}/dev/sushy"
+    sushy_host: primary
+  tasks:
+    - name: Prevent NetworkManager from managing default interface
+      command: 'nmcli dev set {{ ansible_facts.default_ipv4.interface }} managed no'
+      become: true
+      when: ansible_facts.os_family == 'RedHat'
+
+    - name: Ensure overcloud is deployed
+      shell:
+        cmd: "{{ kayobe_src_dir }}/dev/overcloud-deploy.sh &> {{ logs_dir }}/ansible/overcloud-deploy"
+        executable: /bin/bash
+
+    # Check that passwords are Vault encrypted.
+    - name: View passwords.yml using Ansible Vault
+      vars:
+        kayobe_venv: "{{ ansible_env.HOME }}/kayobe-venv"
+      command: >-
+        {{ kayobe_venv }}/bin/ansible-vault
+        view
+        --vault-password-file {{ kayobe_venv }}/bin/kayobe-vault-password-helper
+        {{ kayobe_config_src_dir }}/etc/kayobe/kolla/passwords.yml
+
+    - name: Ensure Redfish emulator is deployed
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe playbook run {{ sushy_directory }}/sushy-emulator.yml &> {{ logs_dir }}/ansible/sushy-emulator
+        executable: /bin/bash
+
+    - name: Ensure MAC addresses are generated for virtual baremetal nodes
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe playbook run {{ sushy_directory }}/generate-mac-addresses.yml &> {{ logs_dir }}/ansible/generate-mac-addresses
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are created
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe playbook run {{ sushy_directory }}/create-virtual-baremetal.yml &> {{ logs_dir }}/ansible/create-virtual-baremetal
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are enrolled
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute register &> {{ logs_dir }}/ansible/baremetal-compute-register
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are manageable
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute manage &> {{ logs_dir }}/ansible/baremetal-compute-mamage
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are inspected (Redfish)
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute inspect &> {{ logs_dir }}/ansible/baremetal-compute-inspect-redfish
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are inspected (agent)
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute register \
+          -e baremetal_compute_inspect_interface=agent \
+          &> {{ logs_dir }}/ansible/baremetal-compute-register-agent &&
+          kayobe baremetal compute inspect &> {{ logs_dir }}/ansible/baremetal-compute-inspect-agent
+        executable: /bin/bash
+
+    - name: Ensure virtual baremetal nodes are provided
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute provide &> {{ logs_dir }}/ansible/baremetal-compute-provide
+        executable: /bin/bash
+
+    - name: Perform testing of the baremetal machines
+      shell:
+        cmd: dev/overcloud-test-baremetal.sh &> {{ logs_dir }}/ansible/overcloud-test-baremetal
+        chdir: "{{ kayobe_src_dir }}"
+        executable: /bin/bash
+
+    - name: Register dummy baremetal compute nodes
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          source "${KOLLA_CONFIG_PATH:-/etc/kolla}/admin-openrc.sh" &&
+          kayobe baremetal compute register &> {{ logs_dir }}/ansible/baremetal-compute-register
+        executable: /bin/bash
+
+    - name: Perform database backup
+      shell:
+        cmd: >
+          source {{ kayobe_src_dir }}/dev/environment-setup.sh &&
+          kayobe overcloud database backup &> {{ logs_dir }}/ansible/database-backup
+        executable: /bin/bash

@@ -1,0 +1,9 @@
+---
+
+bikolla_enable_secureboot: false
+
+baremetal_compute_system_id: "{{ inventory_hostname | to_uuid }}"
+baremetal_compute_resource_class: "example_resource_class"
+baremetal_compute_capabilities: "boot_option:local,boot_mode:uefi"
+
+redfish_address: http://192.168.33.3:8000
