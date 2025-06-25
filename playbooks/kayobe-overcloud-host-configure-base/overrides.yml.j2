@@ -224,3 +224,7 @@ controller_swap:
 
 # Generate a password for libvirt SASL authentication.
 compute_libvirt_sasl_password: "{% raw %}{{ lookup('password', '/tmp/libvirt-sasl-password') }}{% endraw %}"
+
+# Add a custom entry to /etc/hosts.
+custom_etc_hosts_entries:
+  foo.example.com: 127.0.0.88
