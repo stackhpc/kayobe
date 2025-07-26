@@ -595,22 +595,32 @@ def _net_interface_type(context, name, inventory_hostname):
 
 @jinja2.pass_context
 def net_is_ether(context, name, inventory_hostname=None):
-    return _net_interface_type(context, name, inventory_hostname) == 'ether'
+    return _net_interface_type(
+        context, name, inventory_hostname
+    ) == "ether" and not net_is_unmanaged(context, name, inventory_hostname)
 
 
 @jinja2.pass_context
 def net_is_bridge(context, name, inventory_hostname=None):
-    return _net_interface_type(context, name, inventory_hostname) == 'bridge'
+    return _net_interface_type(context, name, inventory_hostname
+    ) == 'bridge' and not net_is_unmanaged(context, name, inventory_hostname)
 
 
 @jinja2.pass_context
 def net_is_bond(context, name, inventory_hostname=None):
-    return _net_interface_type(context, name, inventory_hostname) == 'bond'
+    return _net_interface_type(context, name, inventory_hostname
+    ) == 'bond' and not net_is_unmanaged(context, name, inventory_hostname)
 
 
 @jinja2.pass_context
 def net_is_vlan(context, name, inventory_hostname=None):
-    return net_vlan(context, name) is not None
+    return net_vlan(context, name
+    ) is not None and not net_is_unmanaged(context, name, inventory_hostname)
+
+
+@jinja2.pass_context
+def net_is_unmanaged(context, name, inventory_hostname=None):
+    return net_attr(context, name, 'unmanaged', inventory_hostname)
 
 
 @jinja2.pass_context
@@ -804,6 +814,7 @@ def get_filters():
         'net_is_bridge': net_is_bridge,
         'net_is_bond': net_is_bond,
         'net_is_vlan': net_is_vlan,
+        'net_is_unmanaged': net_is_unmanaged,
         'net_select_ethers': net_select_ethers,
         'net_select_bridges': net_select_bridges,
         'net_select_bonds': net_select_bonds,
