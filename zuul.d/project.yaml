@@ -21,7 +21,9 @@
         - kayobe-seed-ubuntu-noble-podman
         - kayobe-seed-upgrade-ubuntu-noble
         - kayobe-seed-vm-rocky9
+        - kayobe-seed-vm-rocky9-efi
         - kayobe-seed-vm-ubuntu-noble
+        - kayobe-seed-vm-ubuntu-noble-efi
         - kayobe-infra-vm-rocky9
         - kayobe-infra-vm-ubuntu-noble
     gate:
