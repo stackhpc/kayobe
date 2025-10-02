@@ -775,6 +775,39 @@ function tenks_deploy {
     run_tenks_playbook "$tenks_path" deploy.yml "$tenks_deploy_type"
 }
 
+function tenks_reboot_network_fix {
+    set -eu
+    # Create a simple test Tenks deployment. Assumes that a bridge named
+    # 'breth1' exists.  Arguments:
+    # $1: The path to the Tenks repo.
+    local tenks_path="$1"
+    local tenks_deploy_type="${2:-default}"
+
+    echo "Configuring missing Tenks host network"
+
+    environment_setup
+
+    # We don't want to use the Kayobe venv.
+    deactivate
+
+    # Install the Tenks venv.
+    install_venv_system_site_packages "${TENKS_VENV_PATH}" "$tenks_path" -c "$UPPER_CONSTRAINTS_FILE"
+    source ${TENKS_VENV_PATH:-$HOME/tenks-test-venv}/bin/activate
+
+    ${KAYOBE_SOURCE_PATH}/tools/ansible-galaxy-retried.sh install \
+        --role-file="$tenks_path/requirements.yml" \
+        --roles-path="$tenks_path/ansible/roles/"
+
+    local parent="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Install a trivial script for ovs-vsctl that talks to containerised Open
+    # vSwitch.
+    sudo cp --no-clobber "$parent/ovs-vsctl" /usr/bin/ovs-vsctl
+
+    run_tenks_playbook "$tenks_path" host_setup.yml
+    run_tenks_playbook "$tenks_path" node_networking.yml "$tenks_deploy_type"
+}
+
 function tenks_teardown {
     set -eu
     # Tear down a test Tenks deployment.
