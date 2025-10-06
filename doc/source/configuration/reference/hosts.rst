@@ -690,8 +690,6 @@ Tuned
 *tags:*
   | ``tuned``
 
-.. note:: Tuned configuration only supports CentOS/Rocky systems for now.
-
 Built-in ``tuned`` profiles can be applied to hosts. The following variables
 can be used to set a ``tuned`` profile to specific types of hosts:
 
@@ -1240,7 +1238,7 @@ are relevant only when using the libvirt daemon rather than the
     Default is ``true``.
 ``compute_libvirt_ceph_repo_release``
     Ceph package repository release to install on CentOS and Rocky hosts when
-    ``compute_libvirt_ceph_repo_install`` is ``true``. Default is ``pacific``.
+    ``compute_libvirt_ceph_repo_install`` is ``true``. Default is ``squid``.
 
 Example: custom libvirtd.conf
 -----------------------------

@@ -20,9 +20,11 @@ def _is_dnf():
     return info in ['centos', 'rocky']
 
 
+# NOTE: There are OpenDev mirrors only for centos-stream/9-stream and epel/9.
 def _is_dnf_mirror():
     info = distro.id()
-    return info == 'centos'
+    version = distro.version()
+    return info == 'centos' and version == '9'
 
 
 def _is_ubuntu_noble():
@@ -272,8 +274,6 @@ def test_dnf_automatic(host):
     assert host.service("dnf-automatic.timer").is_running
 
 
-@pytest.mark.skipif(not _is_dnf(),
-                    reason="tuned profiles only supported on CentOS/Rocky")
 def test_tuned_profile_is_active(host):
     tuned_output = host.check_output("tuned-adm active")
     assert "throughput-performance" in tuned_output
