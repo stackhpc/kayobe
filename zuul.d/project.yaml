@@ -39,6 +39,7 @@
         - kayobe-seed-upgrade-ubuntu-noble
         - kayobe-seed-vm-rocky10
         - kayobe-seed-vm-rocky9
+        - kayobe-seed-vm-rocky9-efi
         - kayobe-seed-vm-ubuntu-noble
     gate:
       jobs:
