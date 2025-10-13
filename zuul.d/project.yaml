@@ -19,6 +19,7 @@
         - kayobe-infra-vm-ubuntu-noble
         - kayobe-overcloud-host-configure-rocky10
         - kayobe-overcloud-host-configure-rocky9
+        - kayobe-overcloud-host-configure-rocky10
         - kayobe-overcloud-host-configure-ubuntu-noble
         - kayobe-overcloud-rocky9
         - kayobe-overcloud-rocky9-podman
@@ -53,6 +54,7 @@
         - kayobe-infra-vm-ubuntu-noble
         - kayobe-overcloud-host-configure-rocky10
         - kayobe-overcloud-host-configure-rocky9
+        - kayobe-overcloud-host-configure-rocky10
         - kayobe-overcloud-host-configure-ubuntu-noble
         - kayobe-overcloud-rocky9
         - kayobe-overcloud-rocky9-podman
@@ -86,6 +88,7 @@
         - kayobe-overcloud-centos9s
         - kayobe-overcloud-host-configure-centos10s
         - kayobe-overcloud-host-configure-centos9s
+        - kayobe-overcloud-host-configure-centos10s
         - kayobe-seed-images-centos9s
         - kayobe-seed-images-rocky9
         - kayobe-seed-images-rocky9-podman
