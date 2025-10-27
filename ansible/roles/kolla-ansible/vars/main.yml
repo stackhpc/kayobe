@@ -78,6 +78,7 @@ kolla_feature_flags:
   - aodh
   - barbican
   - blazar
+  - caso
   - ceilometer
   - ceilometer_horizon_policy_file
   - ceilometer_ipmi
@@ -199,6 +200,7 @@ kolla_feature_flags:
   - openvswitch
   - osprofiler
   - ovn
+  - ovn_sb_db_relay
   - ovs_dpdk
   - placement
   - prometheus
