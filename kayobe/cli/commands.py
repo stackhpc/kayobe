@@ -1913,11 +1913,29 @@ class NetworkConnectivityCheck(KayobeAnsibleMixin, VaultMixin, Command):
 
 
 class BaremetalComputeRegister(KayobeAnsibleMixin, VaultMixin, Command):
-    """Register baremetal compute nodes in Ironic."""
+    """Register baremetal compute nodes in Ironic.
+
+    Deprecated: Legacy command for backwards compatibility with existing
+    deployments.
+    """
 
     def take_action(self, parsed_args):
         self.app.LOG.debug("Register baremetal compute nodes in Ironic.")
-        playbooks = _build_playbook_list("baremetal-compute-register")
+        playbooks = _build_playbook_list("baremetal-node-register")
+        # NOTE(dougszu): baremetal_register_group is used here rather than
+        # --limit, since --limit would also apply to the play which installs
+        # openstacksdk on the controller, causing it to be skipped.
+        extra_vars = {"baremetal_register_group": "baremetal-compute"}
+        self.run_kayobe_playbooks(parsed_args, playbooks,
+                                  extra_vars=extra_vars)
+
+
+class BaremetalNodeRegister(KayobeAnsibleMixin, VaultMixin, Command):
+    """Register baremetal nodes in Ironic."""
+
+    def take_action(self, parsed_args):
+        self.app.LOG.debug("Register baremetal nodes in Ironic.")
+        playbooks = _build_playbook_list("baremetal-node-register")
         self.run_kayobe_playbooks(parsed_args, playbooks)
 
 

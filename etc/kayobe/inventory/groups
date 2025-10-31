@@ -88,10 +88,15 @@ overcloud
 infra-vms
 
 ###############################################################################
-# Baremetal compute node groups.
+# Baremetal node groups.
 
 [baremetal-compute]
 # Empty group to provide declaration of baremetal-compute group.
+
+[baremetal:children]
+baremetal-compute
+# Add other groups here, e.g. baremetal_h200, to enrol their hosts in
+# Ironic via 'kayobe baremetal node register'.
 
 ###############################################################################
 # Networking groups.

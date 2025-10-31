@@ -21,6 +21,17 @@ nodes through inspection. Bare metal compute nodes can be registered in Ironic
 via Kayobe if defined in the Kayobe inventory. An example hosts file for group
 r1 is below:
 
+.. note::
+
+   ``kayobe baremetal compute register`` is deprecated in favour of
+   ``kayobe baremetal node register``, which registers all hosts in the
+   ``baremetal`` group. This group contains ``baremetal-compute`` hosts by
+   default, but can be extended in your own inventory with other groups,
+   such as a ``baremetal_h200`` group of GPU hosts, if you want those hosts
+   enrolled in Ironic too. ``kayobe baremetal compute register`` is retained
+   for backwards compatibility and continues to be limited to the
+   ``baremetal-compute`` group.
+
 .. code-block:: ini
 
    [r1]
@@ -37,40 +48,29 @@ are using.
 
 .. code-block:: yaml
 
-   ironic_driver: redfish
-
-   ironic_driver_info:
-     redfish_system_id: "{{ ironic_redfish_system_id }}"
-     redfish_address: "{{ ironic_redfish_address }}"
-     redfish_username: "{{ ironic_redfish_username }}"
-     redfish_password: "{{ ironic_redfish_password }}"
-     redfish_verify_ca: "{{ ironic_redfish_verify_ca }}"
-     ipmi_address: "{{ ipmi_address }}"
-
-   ironic_properties:
-     capabilities: "{{ ironic_capabilities }}"
-
    ironic_resource_class: "example_resource_class"
-   ironic_redfish_system_id: "/redfish/v1/Systems/System.Embedded.1"
-   ironic_redfish_verify_ca: "{{ inspector_rule_var_redfish_verify_ca }}"
-   ironic_redfish_address: "{{ ipmi_address }}"
-   ironic_redfish_username: "{{ inspector_redfish_username }}"
-   ironic_redfish_password: "{{ inspector_redfish_password }}"
-   ironic_capabilities: "boot_option:local,boot_mode:uefi"
 
-It is essential that the Ironic username and password match the BMC username
+   ironic_driver_info_extra:
+     redfish_system_id: "/redfish/v1/Systems/System.Embedded.1"
+     redfish_verify_ca: "{{ inspector_rule_var_redfish_verify_ca }}"
+
+``ironic_resource_class`` must always be set. The other Ironic node
+variables have defaults, defined in
+``ansible/inventory/group_vars/all/baremetal``.
+
+It is essential that the Redfish username and password match the BMC username
 and password for your nodes. If the username and password combination is not
 the same for the entire group you will need to adjust your configuration
-accordingly. The IPMI address should also match the BMC address for your node.
+accordingly.
 
 Once this has been completed you can begin enrolling the Ironic nodes::
 
-    (kayobe) $ kayobe baremetal compute register
+    (kayobe) $ kayobe baremetal node register
 
-Inspector is not used to discover nodes and no node inspection will take place
-on enrollment, nodes will automatically be placed into ``manageable`` state. To
-inspect, you should use ``kayobe baremetal compute inspect`` following
-enrollment.
+Inspector is not used to discover nodes and no node inspection will take
+place on enrollment. Newly enrolled nodes are automatically moved from the
+``enroll`` state into the ``manageable`` state, ready to be inspected with
+``kayobe baremetal compute inspect``.
 
 Manage
 ------

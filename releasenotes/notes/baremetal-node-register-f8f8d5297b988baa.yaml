@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    Adds the ``kayobe baremetal node register`` command, which registers
+    nodes in the new ``baremetal`` group (containing ``baremetal-compute``
+    hosts by default, extendable with other groups) with Ironic, using the
+    ``openstack.cloud.baremetal_node`` module. This allows other hosts,
+    such as overcloud hosts, to be enrolled in Ironic, and supports
+    updating existing nodes. Newly enrolled nodes are automatically moved
+    into the ``manageable`` provision state, matching the previous
+    behaviour of ``kayobe baremetal compute register``.
+upgrade:
+  - |
+    ``kayobe baremetal compute register`` is deprecated in favour of
+    ``kayobe baremetal node register``.

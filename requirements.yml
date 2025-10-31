@@ -3,6 +3,12 @@ collections:
   - name: https://github.com/openstack/ansible-collection-kolla
     type: git
     version: stable/2025.1
+  # NOTE(dougszu): this replaces the openstack.cloud collection normally
+  # installed from Galaxy below, since it is merged upstream but not yet in
+  # a release. Revert to the Galaxy release of openstack.cloud when it is.
+  - name: https://github.com/stackhpc/ansible-collections-openstack
+    type: git
+    version: feature/remove_mac_requirement_v2
   - name: community.docker
     version: 3.11.0
   - name: community.network
@@ -15,8 +21,6 @@ collections:
     version: 1.2.7
   - name: nvidia.nvue
     version: 1.2.9
-  - name: openstack.cloud
-    version: '<3'
   - name: stackhpc.linux
     version: 1.5.2
   - name: stackhpc.network
