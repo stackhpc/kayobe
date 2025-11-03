@@ -12,6 +12,9 @@ Signed-by: {% if not repo.signed_by.startswith('/') %}{{ apt_keys_path }}/{% end
 {% if repo.architecture is defined %}
 Architecture: {{ repo.architecture }}
 {% endif %}
+{% if repo.trusted is defined %}
+Trusted: {{ repo.trusted | bool }}
+{% endif %}
 
 {% endif %}
 {% endfor %}
