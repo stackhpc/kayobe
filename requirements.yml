@@ -2,9 +2,15 @@
 collections:
   - name: https://opendev.org/openstack/ansible-collection-kolla
     type: git
-    version: master
+    version: stable/2025.2
   - name: community.docker
     version: 3.11.0
+  - name: community.network
+    version: 5.1.0
+  - name: dellemc.os6
+    version: 1.0.7
+  - name: dellemc.os9
+    version: 1.0.4
   - name: dellemc.os10
     version: 1.2.7
   - name: nvidia.nvue
@@ -16,16 +22,16 @@ collections:
   - name: stackhpc.network
     version: 1.0.0
   - name: stackhpc.openstack
-    version: 0.2.2
+    version: 0.6.0
 
 roles:
   - src: ahuffman.resolv
     version: 1.3.1
   - src: giovtorres.tuned
     version: 1.2.0
-  - src: jriguera.configdrive
-    # There are no versioned releases of this role.
-    version: 71ddface5540ee0ff9e35bcc4334c766ed5d5d3f
+  - src: git+https://github.com/stackhpc/ansible-role-configdrive.git
+    name: jriguera.configdrive
+    version: fb199247333e72e38a9d414cf7b6144daa645477
   - src: MichaelRigart.interfaces
     version: v1.15.6
   - src: mrlesmithjr.chrony
@@ -40,8 +46,9 @@ roles:
     version: 1.1.6
   - src: stackhpc.drac-facts
     version: 1.0.0
-  - src: stackhpc.libvirt-host
-    version: v1.14.0
+  - src: git+https://github.com/stackhpc/ansible-role-libvirt-host.git
+    name: stackhpc.libvirt-host
+    version: 9a947f74abdcd2e0d4e3371162f8299aef259271
   - src: stackhpc.libvirt-vm
     version: v1.16.3
   - src: stackhpc.luks
