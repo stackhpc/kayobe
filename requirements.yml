@@ -32,8 +32,9 @@ roles:
     version: v0.1.6
   - src: mrlesmithjr.manage_lvm
     version: v0.2.8
-  - src: mrlesmithjr.mdadm
-    version: v0.1.1
+  - name: mrlesmithjr.mdadm
+    src: https://github.com/stackhpc/ansible-mdadm.git
+    version: pip-797/master
   - src: singleplatform-eng.users
     version: v1.2.5
   - src: stackhpc.drac
