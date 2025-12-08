@@ -134,7 +134,9 @@
         src: overrides.yml.j2
         dest: "{{ kayobe_config_src_dir }}/etc/kayobe/zz-10-overrides.yml"
 
-    - block:
+    - vars:
+        branch_prefix: "{{ 'unmaintained' if previous_release | lower == '2024.1' else 'stable' }}"
+      block:
         - name: Ensure previous kayobe directory exists
           file:
             path: "{{ previous_kayobe_src_dir }}"
