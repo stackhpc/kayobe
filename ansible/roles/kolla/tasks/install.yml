@@ -85,4 +85,6 @@
       # This can be removed once a newer version of docker is released and the version in upper
       # constraints has been bumped (>7.0.0).
       extra_args: "{{ omit }}"
+      # NOTE(elelaysh): Workaround for removed pkg_resources in setuptools v82.0.0
+    - name: "setuptools<82"
   when: item.install | default(True) | bool
