@@ -616,6 +616,26 @@ The following attributes are supported:
     bond and bridge interfaces, settings apply to underlying interfaces. This
     should be a string of arguments passed to the ``ethtool`` utility, for
     example ``"-G ${DEVICE} rx 8192 tx 8192"``.
+``ingress_qos_map``
+    .. note::
+
+       ``ingress_qos_map`` is only supported with
+       ``network_engine: nmstate`` on VLAN interfaces.
+
+    VLAN ingress QoS map configuration. This maps VLAN header Priority Code
+    Point (PCP) to Linux internal packet priority for incoming packets.
+
+    - Structured list: ``[{from: 7, to: 254}, {from: 3, to: 12}]``
+``egress_qos_map``
+    .. note::
+
+       ``egress_qos_map`` is only supported with
+       ``network_engine: nmstate`` on VLAN interfaces.
+
+    VLAN egress QoS map configuration. This maps Linux internal packet
+    priority to VLAN header Priority Code Point (PCP) for outgoing packets.
+
+    - Structured list: ``[{from: 129, to: 7}, {from: 130, to: 6}]``
 ``zone``
     .. note:: ``zone`` is not currently supported on Ubuntu.
 
@@ -764,6 +784,29 @@ this case, a ``parent`` attribute must specify the underlying interface:
 
 Ethernet interfaces, bridges, and bond master interfaces may all be parents to
 a VLAN interface.
+
+VLAN QoS Mapping (nmstate)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using ``network_engine: nmstate``, VLAN interfaces can define native
+nmstate QoS maps via ``ingress_qos_map`` and ``egress_qos_map``. These map
+between Linux internal packet priority and VLAN header Priority Code Point
+(PCP). Use the structured list-of-maps form.
+
+.. code-block:: yaml
+   :caption: ``inventory/group_vars/<group>/network-interfaces``
+
+   example_interface: "eth2.{{ example_vlan }}"
+   example_ingress_qos_map:
+     - from: 7
+       to: 254
+   example_egress_qos_map:
+     - from: 129
+       to: 7
+
+Undefined QoS map values do not render an nmstate QoS map key. Use an
+explicit empty list (``[]``) to render an empty map through nmstate, for
+example when clearing an existing map.
 
 Bridges and VLANs
 ^^^^^^^^^^^^^^^^^
@@ -926,6 +969,27 @@ consideration:
   lookup the interface for the cloud-init network configuration that occurs
   during bifrost provisioning of the overcloud.
 
+
+Registration of networks in OpenStack
+--------------------------------------
+
+By default, Kayobe will register the following networks:
+
+* :ref:`workload-cleaning-network`
+* :ref:`workload-provisioning-network`
+* :ref:`workload-inspection-network`
+
+as part of ``kayobe overcloud post configure``. You can change this behaviour
+for all networks with the ``openstack_network_registration_enabled`` variable:
+
+.. code-block:: yaml
+   :caption: ``networks.yml``
+
+   # Disabling registration of OpenStack networks
+   openstack_network_registration_enabled: false
+
+This can be useful if you define you networks by some other means e.g OpenTofu.
+
 Overcloud Provisioning Network
 ------------------------------
 
@@ -950,6 +1014,8 @@ To configure a network called ``example`` with an inspection allocation pool:
 
    This pool should not overlap with a kayobe allocation pool on the same
    network.
+
+.. _workload-cleaning-network:
 
 Workload Cleaning Network
 -------------------------
@@ -980,6 +1046,8 @@ allocation pool:
    This pool should not overlap with a kayobe or inspection allocation pool on
    the same network.
 
+.. _workload-provisioning-network:
+
 Workload Provisioning Network
 -----------------------------
 
@@ -1006,6 +1074,8 @@ allocation pool:
 
    This pool should not overlap with a kayobe or inspection allocation pool on
    the same network.
+
+.. _workload-inspection-network:
 
 Workload Inspection Network
 ---------------------------
