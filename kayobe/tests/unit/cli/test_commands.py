@@ -1246,6 +1246,29 @@ class TestCase(unittest.TestCase):
 
     @mock.patch.object(commands.KayobeAnsibleMixin,
                        "run_kayobe_playbooks")
+    def test_overcloud_hardware_register(self, mock_run):
+        command = commands.OvercloudHardwareRegister(TestApp(), [])
+        parser = command.get_parser("test")
+        parsed_args = parser.parse_args([])
+
+        result = command.run(parsed_args)
+        self.assertEqual(0, result)
+
+        expected_calls = [
+            mock.call(
+                mock.ANY,
+                [
+                    utils.get_data_files_path(
+                        "ansible", "kolla-bifrost-hostvars.yml"),
+                    utils.get_data_files_path(
+                        "ansible", "overcloud-hardware-register.yml"),
+                ],
+            ),
+        ]
+        self.assertListEqual(expected_calls, mock_run.call_args_list)
+
+    @mock.patch.object(commands.KayobeAnsibleMixin,
+                       "run_kayobe_playbooks")
     def test_overcloud_hardware_inspect(self, mock_run):
         command = commands.OvercloudHardwareInspect(TestApp(), [])
         parser = command.get_parser("test")
@@ -1752,6 +1775,7 @@ class TestCase(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
+                extra_vars={}
             ),
             mock.call(
                 mock.ANY,
@@ -1812,6 +1836,7 @@ class TestCase(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
+                extra_vars={}
             ),
             mock.call(
                 mock.ANY,
@@ -1856,6 +1881,7 @@ class TestCase(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
+                extra_vars={}
             ),
         ]
         self.assertListEqual(expected_calls, mock_kolla_run.call_args_list)
@@ -1914,6 +1940,7 @@ class TestCase(unittest.TestCase):
             mock.call(
                 mock.ANY,
                 "prechecks",
+                extra_vars={}
             ),
             mock.call(
                 mock.ANY,
@@ -2046,7 +2073,8 @@ class TestCase(unittest.TestCase):
         expected_calls = [
             mock.call(
                 mock.ANY,
-                "prechecks"
+                "prechecks",
+                extra_vars={}
             ),
             mock.call(
                 mock.ANY,

@@ -51,8 +51,8 @@
         ping {{ item | net_gateway }} -c1 -M do {% if mtu %} -s {{ mtu | int - icmp_overhead_bytes }}{% endif %}
       with_items: "{{ network_interfaces }}"
       when:
-        - item | net_ip
-        - item | net_gateway
+        - item | net_ip is truthy
+        - item | net_gateway is truthy
       changed_when: False
       vars:
         mtu: "{{ item | net_mtu }}"
@@ -77,14 +77,14 @@
       when:
         - remote_hosts | length > 0
         - remote_ip | length > 0
-        - item | net_ip
+        - item | net_ip is truthy
       changed_when: False
       vars:
         # Select other hosts targeted by this play which have this network
         # interface (item).
         remote_hosts: >
           {{ hostvars.values() |
-             selectattr('inventory_hostname', 'is_in', play_hosts) |
+             selectattr('inventory_hostname', 'is_in', ansible_play_batch) |
              selectattr('network_interfaces', 'defined') |
              selectattr('network_interfaces', 'issuperset', [item]) |
              rejectattr('inventory_hostname', 'equalto', inventory_hostname) |
@@ -95,5 +95,5 @@
         # in the command.  Assumption was that this was being evaluated once
         # for the when clause and then again for the command. Bug?
         remote_host: "{{ remote_hosts | random(seed=ansible_facts.date_time.iso8601) if remote_hosts | length > 0 else '' }}"
-        remote_ip: "{{ lookup('cached', 'vars', item ~ '_ips', default={})[remote_host] | default('', true) }}"
+        remote_ip: "{{ lookup('vars', item ~ '_ips', default={})[remote_host] | default('', true) }}"
         mtu: "{{ item | net_mtu }}"
