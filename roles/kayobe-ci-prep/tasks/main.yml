@@ -17,5 +17,6 @@
 
     - name: Enable the EPEL repository
       command: dnf config-manager --disable epel
+
   when: ansible_facts.os_family == 'RedHat'
   become: true
