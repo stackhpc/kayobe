@@ -311,14 +311,14 @@ values for specific host groups where required.
     # Provision / Control maps to a bridge on the 25G bond port
     provision_ctl_net_interface: "br{{ control_25g_interface }}"
     provision_ctl_net_bridge_ports:
-       - "{{ control_25g_interface }}"
+      - "{{ control_25g_interface }}"
     provision_ctl_net_physical_network: "physnet3"
 
     # List of names of networks used to provide external network access via Neutron.
     # This value is overridden for controllers to add the external_10g network.
     external_net_names:
-       - "hs_bond"
-       - "provision_ctl_net"
+      - "hs_bond"
+      - "provision_ctl_net"
 
 Seed Hypervisor
 ===============
@@ -693,12 +693,12 @@ controller hosts and capture the physical NIC names used in bond slave lists.
      - eno36np3
 
     control_25g_bond_slaves:
-       - eno33np0
-       - eno34np1
+      - eno33np0
+      - eno34np1
 
     hs_bond_bond_slaves:
-       - ens3f0np0
-       - ens3f1np1
+      - ens3f0np0
+      - ens3f1np1
 
    external_bridge_interface: "br{{ external_10g_interface }}"
    external_bridge_bridge_ports:
