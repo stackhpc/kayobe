@@ -28,6 +28,19 @@ openstack_auth:
   auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
   system_scope: "{{ lookup('env', 'OS_SYSTEM_SCOPE') }}"
 
+# Internal variable to set the system scope authentication.
+openstack_auth_system_scope_value: 'all'
+
+# Overcloud authentication parameters for system scope. By default this will
+# use the user defined in openstack_auth.
+# NOTE(wszumski): Not all projects support system scope yet and we sometimes need
+# to use system scope and project scope in the same ansible run.
+openstack_auth_system_scope: >-
+  {{ openstack_auth | combine(
+    {'system_scope': openstack_auth_system_scope_value,
+     'project_domain_name': '',
+     'project_name': ''})}}
+
 # Overcloud CA certificate path.
 openstack_cacert: "{{ lookup('env', 'OS_CACERT') }}"
 
@@ -46,6 +59,7 @@ openstack_auth_env:
   OS_AUTH_URL: "{{ lookup('env', 'OS_AUTH_URL') }}"
   OS_INTERFACE: "{{ lookup('env', 'OS_INTERFACE') }}"
   OS_IDENTITY_API_VERSION: "{{ lookup('env', 'OS_IDENTITY_API_VERSION') }}"
+  OS_SYSTEM_SCOPE: "{{ lookup('env', 'OS_SYSTEM_SCOPE') }}"
   OS_CACERT: "{{ lookup('env', 'OS_CACERT') }}"
   OS_SYSTEM_SCOPE: "{{ lookup('env', 'OS_SYSTEM_SCOPE') }}"
 

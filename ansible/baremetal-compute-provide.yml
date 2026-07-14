@@ -36,7 +36,7 @@
   roles:
     - role: stackhpc.os-ironic-state
       os_ironic_state_auth_type: "{{ openstack_auth_type }}"
-      os_ironic_state_auth: "{{ openstack_auth }}"
+      os_ironic_state_auth: "{{ openstack_auth_system_scope }}"
       os_ironic_state_cacert: "{{ openstack_cacert }}"
       os_ironic_state_interface: "{{ openstack_interface }}"
       os_ironic_state_name: "{{ inventory_hostname }}"
