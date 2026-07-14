@@ -38,7 +38,7 @@
     - name: Ensure baremetal compute nodes are inspected in ironic
       os_ironic_inspect:
         auth_type: "{{ openstack_auth_type }}"
-        auth: "{{ openstack_auth }}"
+        auth: "{{ openstack_auth_system_scope }}"
         cacert: "{{ openstack_cacert | default(omit, true) }}"
         interface: "{{ openstack_interface | default(omit, true) }}"
         name: "{{ inventory_hostname }}"
