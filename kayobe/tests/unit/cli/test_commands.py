@@ -38,6 +38,21 @@ class TestCase(unittest.TestCase):
 
     maxDiff = None
 
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_control_host_bootstrap_install_only_default_false(self):
+        command = commands.ControlHostBootstrap(TestApp(), [])
+        parser = command.get_parser("test")
+        parsed_args = parser.parse_args([])
+        self.assertFalse(parsed_args.install_only)
+
+    @mock.patch.dict(os.environ, {"KAYOBE_INSTALL_ONLY": "false"},
+                     clear=True)
+    def test_control_host_bootstrap_install_only_default_false_from_env(self):
+        command = commands.ControlHostBootstrap(TestApp(), [])
+        parser = command.get_parser("test")
+        parsed_args = parser.parse_args([])
+        self.assertFalse(parsed_args.install_only)
+
     @mock.patch.object(ansible, "install_galaxy_roles", autospec=True)
     @mock.patch.object(ansible, "install_galaxy_collections", autospec=True)
     @mock.patch.object(ansible, "passwords_yml_exists", autospec=True)
@@ -55,6 +70,11 @@ class TestCase(unittest.TestCase):
         mock_install_roles.assert_called_once_with(parsed_args)
         mock_install_collections.assert_called_once_with(parsed_args)
         expected_calls = [
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "install.yml")],
+                ignore_limit=True,
+            ),
             mock.call(
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "bootstrap.yml")],
@@ -89,6 +109,11 @@ class TestCase(unittest.TestCase):
         mock_install_roles.assert_called_once_with(parsed_args)
         mock_install_collections.assert_called_once_with(parsed_args)
         expected_calls = [
+            mock.call(
+                mock.ANY,
+                [utils.get_data_files_path("ansible", "install.yml")],
+                ignore_limit=True,
+            ),
             mock.call(
                 mock.ANY,
                 [utils.get_data_files_path("ansible", "bootstrap.yml")],

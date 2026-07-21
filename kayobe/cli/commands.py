@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import sys
+import yaml
 
 from cliff.command import Command
 from cliff.hooks import CommandHook
@@ -301,6 +302,13 @@ class ControlHostBootstrap(KayobeAnsibleMixin, KollaAnsibleMixin, VaultMixin,
         group = parser.add_argument_group("Host Bootstrap")
         group.add_argument("--add-known-hosts", action='store_true',
                            help="add SSH known hosts entries for each host")
+        group.add_argument(
+            "--install-only",
+            action='store_true',
+            default=yaml.safe_load(os.getenv("KAYOBE_INSTALL_ONLY", "false")),
+            help=("only install dependencies "
+                  "(default from KAYOBE_INSTALL_ONLY env var)"),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -308,6 +316,16 @@ class ControlHostBootstrap(KayobeAnsibleMixin, KollaAnsibleMixin, VaultMixin,
         self.handle_kolla_tags_limits_deprecation(parsed_args)
         ansible.install_galaxy_roles(parsed_args)
         ansible.install_galaxy_collections(parsed_args)
+
+        playbooks = _build_playbook_list("install")
+        self.run_kayobe_playbooks(parsed_args, playbooks, ignore_limit=True)
+
+        if parsed_args.install_only:
+            self.app.LOG.debug("Skipping kolla-ansible installation and "
+                               "configuration generation due to "
+                               "--install-only")
+            return
+
         playbooks = _build_playbook_list("bootstrap")
         self.run_kayobe_playbooks(parsed_args, playbooks, ignore_limit=True)
 
