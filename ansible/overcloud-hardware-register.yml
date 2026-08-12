@@ -25,6 +25,7 @@
       delegate_to: "{{ seed_host }}"
       vars:
         ansible_host: "{{ hostvars[seed_host].ansible_host | default(seed_host) }}"
+      become: "{{ container_engine == 'podman' }}"
 
     - name: Create baremetal nodes
       command: >
@@ -45,6 +46,7 @@
         ansible_host: "{{ hostvars[seed_host].ansible_host | default(seed_host) }}"
       when:
         - node_show.rc != 0
+      become: "{{ container_engine == 'podman' }}"
 
     - name: Manage baremetal nodes
       command: >
@@ -59,3 +61,4 @@
         ansible_host: "{{ hostvars[seed_host].ansible_host | default(seed_host) }}"
       when:
         - node_show.rc != 0
+      become: "{{ container_engine == 'podman' }}"
