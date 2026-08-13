@@ -71,7 +71,7 @@
       assert:
         that:
           - hostvars[inventory_hostname][item.var_name] is defined
-          - hostvars[inventory_hostname][item.var_name] | length > 0
+          - hostvars[inventory_hostname][item.var_name] | default("", true) | length > 0
         fail_msg: >
           The Kolla Ansible variable {{ item.var_name }}
           ({{ item.description }}) is invalid. Value:
