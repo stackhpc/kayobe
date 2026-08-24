@@ -44,6 +44,7 @@ class TestNMStateFilter(unittest.TestCase):
         "net3_interface": "br0",
         "net3_bridge_ports": ['eth1'],
         "net3_bridge_stp": True,
+        "net3_mtu": 9000,
         # net4: bond on bond0 with slaves eth2 and eth3.
         "net4_interface": "bond0",
         "net4_bond_slaves": ['eth2', 'eth3'],
@@ -123,6 +124,7 @@ class TestNMStateFilter(unittest.TestCase):
         result = nmstate.nmstate_config(self.context, ["net3"])
         br_iface = next(i for i in result["interfaces"] if i["name"] == "br0")
         self.assertEqual(br_iface["type"], "linux-bridge")
+        self.assertEqual(br_iface["mtu"], 9000)
         self.assertEqual(br_iface["bridge"]["port"], [{"name": "eth1"}])
         self.assertTrue(br_iface["bridge"]["options"]["stp"]["enabled"])
 
@@ -130,6 +132,7 @@ class TestNMStateFilter(unittest.TestCase):
         eth1_iface = next(i for i in result["interfaces"]
                           if i["name"] == "eth1")
         self.assertEqual(eth1_iface["type"], "ethernet")
+        self.assertEqual(eth1_iface["mtu"], 9000)
 
     def test_nmstate_config_bond(self):
         result = nmstate.nmstate_config(self.context, ["net4"])
@@ -433,6 +436,44 @@ class TestNMStateFilter(unittest.TestCase):
         self.assertEqual(vlan_iface["type"], "vlan")
         self.assertEqual(vlan_iface["vlan"]["base-iface"], "eth0")
         self.assertEqual(vlan_iface["vlan"]["id"], 100)
+
+    def test_vlan_on_bridge_inherits_matching_mtu(self):
+        variables = {
+            "inventory_hostname": "test-host",
+            "ansible_facts": {"os_family": "RedHat"},
+            "vlan_interface": "br0.6",
+            "vlan_vlan": 6,
+            "vlan_mtu": 9150,
+            "bridge_interface": "br0",
+            "bridge_bridge_ports": ["eth0"],
+            "bridge_mtu": 9150,
+        }
+        context = self._make_context(variables)
+        result = nmstate.nmstate_config(context, ["vlan", "bridge"])
+
+        vlan_iface = next(
+            i for i in result["interfaces"]
+            if i["name"] == "br0.6")
+        self.assertNotIn("mtu", vlan_iface)
+
+    def test_vlan_on_bridge_keeps_different_mtu(self):
+        variables = {
+            "inventory_hostname": "test-host",
+            "ansible_facts": {"os_family": "RedHat"},
+            "vlan_interface": "br0.6",
+            "vlan_vlan": 6,
+            "vlan_mtu": 9000,
+            "bridge_interface": "br0",
+            "bridge_bridge_ports": ["eth0"],
+            "bridge_mtu": 9150,
+        }
+        context = self._make_context(variables)
+        result = nmstate.nmstate_config(context, ["vlan", "bridge"])
+
+        vlan_iface = next(
+            i for i in result["interfaces"]
+            if i["name"] == "br0.6")
+        self.assertEqual(vlan_iface["mtu"], 9000)
 
     def test_vlan_interface_invalid_name(self):
         """Test VLAN with invalid interface name is skipped gracefully."""
