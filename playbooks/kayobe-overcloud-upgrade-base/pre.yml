@@ -25,3 +25,16 @@
       template:
         src: globals.yml.j2
         dest: "{{ previous_kayobe_config_src_dir }}/etc/kayobe/kolla/globals.yml"
+
+    - name: Remove redfish nodes from tenks config
+      ansible.builtin.lineinfile:
+        path: "{{ kayobe_src_dir }}/dev/tenks-deploy-config-compute.yml"
+        insertafter: "  - type: type1"
+        regexp: "    count: [0-9]"
+        line: "    count: 0"
+
+    - name: Remove redfish baremetal test
+      ansible.builtin.lineinfile:
+        path: "{{ kayobe_src_dir }}/dev/overcloud-test-baremetal.sh"
+        line: "    overcloud_test bm2 test-rc-red provision-net"
+        state: absent
