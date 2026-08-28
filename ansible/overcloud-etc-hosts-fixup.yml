@@ -8,7 +8,7 @@
 # /etc/hosts.  See https://github.com/stackhpc/kayobe/issues/14.
 
 - name: Ensure overcloud hosts' /etc/hosts does not contain incorrect IPs
-  hosts: overcloud
+  hosts: "overcloud:!lustre"
   max_fail_percentage: >-
     {{ overcloud_etc_hosts_fixup_max_fail_percentage |
        default(kayobe_max_fail_percentage) |
