@@ -234,7 +234,7 @@ kolla_feature_flags:
   - telegraf
   - trove
   - trove_singletenant
-  - venus
   - valkey
+  - venus
   - watcher
   - zun
