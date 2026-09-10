@@ -12,7 +12,10 @@ dev_tools_packages_extra: []
 dev_tools_packages_system:
   # NOTE(mgoddard): The acl package is required for the setfacl command, used by
   # become_user.
+  # NOTE(rowanjohns): kernel-modules-extra-matched needs to be installed on RedHat
+  # hosts so that iptables can be used.
   - acl
+  - "{{ 'kernel-modules-extra-matched' if ansible_facts.os_family == 'RedHat' else '' }}"
 
 # List of packages to install.
 dev_tools_packages: "{{ (dev_tools_packages_default + dev_tools_packages_extra + dev_tools_packages_system) | select | list }}"
