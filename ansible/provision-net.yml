@@ -62,7 +62,10 @@
           gateway_ip: "{{ cleaning_net_name | net_neutron_gateway or cleaning_net_name | net_gateway | default(omit, True) }}"
           allocation_pool_start: "{{ cleaning_net_name | net_neutron_allocation_pool_start }}"
           allocation_pool_end: "{{ cleaning_net_name | net_neutron_allocation_pool_end }}"
-    network_registrations: "{{ [provision_net] + ([] if cleaning_net_name == provision_wl_net_name else [cleaning_net]) }}"
+    network_registrations: >-
+      {{ ([inspection_net] if inspection_net_name != provision_wl_net_name else [])
+        + [provision_net]
+        + ([] if cleaning_net_name == provision_wl_net_name else [cleaning_net]) }}
   tags:
     - provision-net
     - cleaning-net
