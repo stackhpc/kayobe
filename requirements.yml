@@ -7,6 +7,8 @@ collections:
     version: 5.2.0
   - name: community.network
     version: 5.1.0
+  - name: dellemc.enterprise_sonic
+    version: 4.1.0
   - name: dellemc.os6
     version: 1.0.7
   - name: dellemc.os9
@@ -20,7 +22,7 @@ collections:
   - name: openstack.cloud
     version: '<3'
   - name: stackhpc.linux
-    version: 1.6.0
+    version: 1.6.4
   - name: stackhpc.network
     version: 1.0.0
   - name: stackhpc.openstack
@@ -35,7 +37,7 @@ roles:
     # There are no versioned releases of this role.
     version: ebf31eee91056a8fcc71a304ff50b014909cf4ca
   - src: MichaelRigart.interfaces
-    version: v1.17.0
+    version: v1.17.1
   - src: mrlesmithjr.chrony
     version: v0.2.0
   - src: mrlesmithjr.manage_lvm
