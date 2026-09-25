@@ -101,11 +101,6 @@ class TestCase(unittest.TestCase):
                 ignore_limit=True,
                 check=False,
             ),
-            mock.call(
-                mock.ANY,
-                [utils.get_data_files_path("ansible", "public-openrc.yml")],
-                ignore_limit=True
-            ),
         ]
         self.assertListEqual(expected_calls, mock_run.call_args_list)
 
@@ -1631,13 +1626,6 @@ class TestCase(unittest.TestCase):
                     "kayobe_action": "deploy",
                 },
             ),
-            mock.call(
-                mock.ANY,
-                [
-                    utils.get_data_files_path("ansible", "public-openrc.yml"),
-                ],
-                ignore_limit=True,
-            ),
         ]
         self.assertListEqual(expected_calls, mock_run.call_args_list)
 
@@ -1793,13 +1781,6 @@ class TestCase(unittest.TestCase):
                     "kayobe_action": "reconfigure",
                 },
             ),
-            mock.call(
-                mock.ANY,
-                [
-                    utils.get_data_files_path("ansible", "public-openrc.yml"),
-                ],
-                ignore_limit=True,
-            ),
         ]
         self.assertListEqual(expected_calls, mock_run.call_args_list)
 
@@ -1924,14 +1905,6 @@ class TestCase(unittest.TestCase):
                 extra_vars={
                     "kayobe_action": "upgrade",
                 }
-            ),
-            mock.call(
-                mock.ANY,
-                [
-                    utils.get_data_files_path("ansible",
-                                              "public-openrc.yml"),
-                ],
-                ignore_limit=True,
             ),
         ]
         self.assertListEqual(expected_calls, mock_run.call_args_list)
