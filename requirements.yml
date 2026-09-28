@@ -7,6 +7,8 @@ collections:
     version: 3.11.0
   - name: community.network
     version: 5.1.0
+  - name: dellemc.enterprise_sonic
+    version: 4.1.0
   - name: dellemc.os6
     version: 1.0.7
   - name: dellemc.os9
@@ -35,7 +37,7 @@ roles:
   - src: MichaelRigart.interfaces
     version: v1.15.6
   - src: mrlesmithjr.chrony
-    version: v0.1.6
+    version: v0.2.0
   - src: mrlesmithjr.manage_lvm
     version: v0.2.8
   - src: mrlesmithjr.mdadm
