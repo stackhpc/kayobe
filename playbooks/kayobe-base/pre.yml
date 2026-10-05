@@ -88,6 +88,9 @@
         kayobe_galaxy_requirements_src_dir: "{{ kolla_ansible_src_dir }}"
         kayobe_galaxy_requirements_dest_path: "/tmp/kolla-ansible-requirements.yml"
 
+    - vars:
+        branch_prefix: "{{ 'unmaintained' if previous_release | lower == '2023.1' else 'stable' }}"
+
     # NOTE(wszumski): I explored running as an unprivileged user, but it looked like
     # a world of pain, so I've gone for this simpler approach (for now).
     - block:
