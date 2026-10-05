@@ -105,12 +105,6 @@ function config_defaults {
 
     # Log directory in case of errors
     export LOGDIR=${LOGDIR:-}
-
-    # Test with broken conditionals support disabled. We do not want to allow
-    # new upstream code to add broken conditionals, but want to continue to
-    # enable ANSIBLE_ALLOW_BROKEN_CONDITIONALS by default for a period of time
-    # so that users have a chance to update their playbooks.
-    export ANSIBLE_ALLOW_BROKEN_CONDITIONALS=${ANSIBLE_ALLOW_BROKEN_CONDITIONALS:-false}
 }
 
 function config_set {
@@ -146,16 +140,8 @@ function config_init {
 # Installation
 
 function is_dnf {
-    if [[ -e /etc/centos-release || -e /etc/rocky-release ]]; then
+    if [[ -e /etc/rocky-release ]]; then
         command -v dnf >/dev/null 2>&1
-    else
-        return 1
-    fi
-}
-
-function is_yum {
-    if [[ -e /etc/centos-release || -e /etc/rocky-release ]]; then
-        command -v yum >/dev/null 2>&1
     else
         return 1
     fi
@@ -165,9 +151,6 @@ function install_dependencies {
     echo "Installing package dependencies for kayobe"
     if is_dnf; then
         sudo dnf -y install gcc git vim python3-devel python3-pyyaml libffi-devel
-    elif is_yum; then
-        echo "CentOS 7 is no longer supported"
-        exit 1
     else
         sudo apt update
         sudo apt install -y python-is-python3 python3-dev python3-venv gcc git libffi-dev
@@ -497,7 +480,7 @@ function overcloud_deploy {
             sudo cp $ca_cert "/usr/local/share/ca-certificates/kayobe-customca.crt"
             sudo update-ca-certificates
         elif [[ -e /etc/redhat-release ]]; then
-            # CentOS
+            # Rocky Linux
             sudo cp $ca_cert "/etc/pki/ca-trust/source/anchors/kayobe-customca.crt"
             sudo update-ca-trust
         fi
