@@ -1127,6 +1127,27 @@ class OvercloudBIOSRAIDConfigure(KayobeAnsibleMixin, VaultMixin, Command):
         self.run_kayobe_playbooks(parsed_args, playbooks)
 
 
+class OvercloudFirmwareUpdate(KayobeAnsibleMixin, VaultMixin, Command):
+    """Update firmware for the overcloud hosts."""
+
+    def get_parser(self, prog_name):
+        parser = super(OvercloudFirmwareUpdate, self).get_parser(prog_name)
+        group = parser.add_argument_group("Firmware Update")
+        group.add_argument("--display", action='store_true',
+                           help="display the available firmware updates and "
+                                "exit without applying them")
+        return parser
+
+    def take_action(self, parsed_args):
+        self.app.LOG.debug("Updating overcloud host firmware")
+        extra_vars = {
+            "firmware_update_display": parsed_args.display,
+        }
+        playbooks = _build_playbook_list("overcloud-firmware-update")
+        self.run_kayobe_playbooks(parsed_args, playbooks,
+                                  extra_vars=extra_vars)
+
+
 class OvercloudHardwareInspect(KayobeAnsibleMixin, VaultMixin, Command):
     """Inspect the overcloud hardware using ironic inspector.
 
