@@ -37,8 +37,6 @@
     # Whether to only display the available firmware updates without applying
     # them. Overridden by the ``--display`` argument of the CLI command.
     firmware_update_display: False
-    # Whether to apply available firmware updates.
-    apply_update: "{{ not firmware_update_display | bool }}"
     seed_host: "{{ groups['seed'][0] }}"
   pre_tasks:
     - name: Fail if the firmware repository share is not configured
@@ -68,7 +66,6 @@
         # NOTE: Without this, the seed's ansible_host variable will not be
         # respected when using delegate_to.
         ansible_host: "{{ hostvars[seed_host].ansible_host | default(seed_host) }}"
-      when: apply_update | bool
       become: "{{ container_engine == 'podman' }}"
 
   tasks:
@@ -83,7 +80,7 @@
         catalog_file_name: "{{ dell_firmware_update_catalog_file_name | default(omit, true) }}"
         ignore_cert_warning: "{{ dell_firmware_update_ignore_cert_warning | bool }}"
         validate_certs: "{{ dell_firmware_update_validate_certs | bool }}"
-        apply_update: "{{ apply_update | bool }}"
+        apply_update: "{{ not ansible_check_mode }}"
         reboot: "{{ dell_firmware_update_reboot | bool }}"
         job_wait: true
       delegate_to: localhost
@@ -114,5 +111,4 @@
         # NOTE: Without this, the seed's ansible_host variable will not be
         # respected when using delegate_to.
         ansible_host: "{{ hostvars[seed_host].ansible_host | default(seed_host) }}"
-      when: apply_update | bool
       become: "{{ container_engine == 'podman' }}"
