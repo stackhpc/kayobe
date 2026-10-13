@@ -1,0 +1,113 @@
+- name: Remove stale mount from any previous crashed runs
+  ansible.builtin.mount:
+    path: /mnt/cirros
+    state: absent
+  become: true
+  failed_when: false
+
+- name: Load NBD kernel module
+  ansible.builtin.command: modprobe nbd
+  become: true
+  changed_when: false
+
+- name: Remove stale NBD device from any previous crashed runs
+  ansible.builtin.command: qemu-nbd -d /dev/nbd0
+  become: true
+  failed_when: false
+  changed_when: false
+  timeout: 15
+
+- name: Download CirrOS
+  ansible.builtin.get_url:
+    url: "{{ cirros_image_url }}"
+    dest: "{{ image_cache_path }}/cirros-unpatched.img"
+
+- name: Copy CirrOS
+  ansible.builtin.copy:
+    src: "{{ image_cache_path }}/cirros-unpatched.img"
+    dest: "{{ dest }}"
+
+- name: Patch the CirrOS root disk
+  become: true
+  block:
+    - name: Ensure mount point exists
+      ansible.builtin.file:
+        path: /mnt/cirros
+        state: directory
+
+    - name: Attach CirrOS root disk to NBD
+      ansible.builtin.command: qemu-nbd -c /dev/nbd0 -f qcow2 {{ dest }}
+
+    - name: Identify the rootfs partition by its label
+      ansible.builtin.command: blkid -o device -t LABEL=cirros-rootfs
+      changed_when: false
+      register: cirros_root_dev
+
+    - name: Assert the resolved device is the NBD root partition
+      ansible.builtin.assert:
+        that:
+          - cirros_root_dev.rc == 0
+          - cirros_root_dev.stdout_lines | length == 1
+          - cirros_root_dev.stdout_lines[0] is match('^/dev/nbd0p[0-9]+$')
+        fail_msg: "Expected exactly one /dev/nbd0pN with label cirros-rootfs, got: {{ cirros_root_dev.stdout }}"
+
+    - name: Mount the CirrOS rootfs
+      ansible.builtin.mount:
+        path: /mnt/cirros
+        src: "{{ cirros_root_dev.stdout_lines[0] }}"
+        fstype: ext4
+        state: mounted
+
+    - name: Read the real initrd path (may be a symlink to boot/initrd.img-<kver>)
+      ansible.builtin.command: readlink -f /mnt/cirros/initrd.img
+      changed_when: false
+      register: cirros_initrd_real
+
+    - name: Extract the initramfs rootfs
+      ansible.builtin.shell: set -o pipefail; mkdir -p /tmp/cirros-initrd && zcat "{{ cirros_initrd_real.stdout }}" | cpio -idm --quiet -D /tmp/cirros-initrd
+
+    - name: Assert S40network matches the expected layout
+      ansible.builtin.assert:
+        that:
+          - (lookup('ansible.builtin.file', '/tmp/cirros-initrd/etc/init.d/S40network')) is regex('dhcpcd --noipv4ll -w -t 180')
+          - (lookup('ansible.builtin.file', '/tmp/cirros-initrd/etc/init.d/S40network')) is regex('/sbin/ifup (lo|-a)')
+        fail_msg: "S40network does not match expected stock layout - re-validate this patch"
+
+    - name: Apply patch
+      ansible.builtin.replace:
+        path: /tmp/cirros-initrd/etc/init.d/S40network
+        regexp: '^([ \t]*)/sbin/ifup lo\n[ \t]*/sbin/dhcpcd --noipv4ll -w -t 180'
+        # Instead of only bringing up loopback, we bring up all interfaces, and only run dhcpcd if we haven't got a route to 1.0.0.0
+        replace: |
+          \1/sbin/ifup -a
+          \1if ip route get 1 2>&1 | grep -iq "unreachable"; then
+          \1    /sbin/dhcpcd --noipv4ll -w -t 180
+          \1fi
+
+    - name: Repack the initramfs (cpio newc + gzip, matching cirros's build format)
+      ansible.builtin.shell: |
+        set -o pipefail
+        cd /tmp/cirros-initrd
+        find . | cpio -o -H newc --quiet 2>/dev/null | gzip -9 > "/mnt/cirros/NEW-initrd"
+      register: repack
+      changed_when: '"created" not in repack.stderr'   # tighten if you prefer hard check
+
+    - name: Replace the on-image initrd
+      ansible.builtin.command: mv /mnt/cirros/NEW-initrd "{{ cirros_initrd_real.stdout }}"
+
+    - name: Delete temporary initrd
+      ansible.builtin.file:
+        path: /tmp/cirros-initrd
+        state: absent
+
+  always:
+     - name: Unmount the CirrOS rootfs
+       ansible.builtin.mount:
+         path: /mnt/cirros
+         state: absent
+
+     - name: Detach the NBD device
+       ansible.builtin.command: qemu-nbd -d /dev/nbd0
+       become: true
+       changed_when: false
+       timeout: 15
