@@ -27,8 +27,9 @@ collections:
     version: 1.5.2
   - name: stackhpc.network
     version: 1.0.0
-  - name: stackhpc.openstack
-    version: 0.10.2
+  - name: https://github.com/stackhpc/ansible-collection-openstack
+    type: git
+    version: aufn-testing
 
 roles:
   - src: ahuffman.resolv
