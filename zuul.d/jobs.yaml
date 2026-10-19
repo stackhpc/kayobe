@@ -9,6 +9,7 @@
       - playbooks/kayobe-tox-ansible-syntax/pre.yml
     required-projects:
       - name: openstack/ansible-collection-kolla
+    timeout: 3600
     vars:
       tox_envlist: ansible-syntax
       # Use the site's OpenDev Galaxy mirror for role/collection installs.
@@ -92,11 +93,19 @@
     required-projects:
       # Include kayobe to ensure other projects can use this job.
       - name: openstack/ansible-collection-kolla
+        # TODO(rlewandowski): Remove when kayobe stable/2026.2 exists.
+        override-checkout: stable/2026.2
       - name: openstack/kayobe
       - name: openstack/kayobe-config-dev
       - name: openstack/kolla
+        # TODO(rlewandowski): Remove when kayobe stable/2026.2 exists.
+        override-checkout: stable/2026.2
       - name: openstack/kolla-ansible
+        # TODO(rlewandowski): Remove when kayobe stable/2026.2 exists.
+        override-checkout: stable/2026.2
       - name: openstack/requirements
+        # TODO(rlewandowski): Remove when kayobe stable/2026.2 exists.
+        override-checkout: stable/2026.2
       - name: openstack/tenks
     irrelevant-files:
       - ^\..+
@@ -269,7 +278,7 @@
       Configures the primary VM as a seed.
     pre-run: playbooks/kayobe-seed-base/pre.yml
     run: playbooks/kayobe-seed-base/run.yml
-    timeout: 5400
+    timeout: 7200
     vars:
       build_images: false
 
@@ -374,7 +383,7 @@
       and upgrades it to the current release.
     pre-run: playbooks/kayobe-seed-upgrade-base/pre.yml
     run: playbooks/kayobe-seed-upgrade-base/run.yml
-    timeout: 5400
+    timeout: 7200
 
 - job:
     name: kayobe-seed-upgrade-rocky10
@@ -406,7 +415,7 @@
       as a VM.
     pre-run: playbooks/kayobe-seed-vm-base/pre.yml
     run: playbooks/kayobe-seed-vm-base/run.yml
-    timeout: 5400
+    timeout: 7200
 
 - job:
     name: kayobe-seed-vm-rocky10
@@ -464,7 +473,7 @@
       infra VM.
     pre-run: playbooks/kayobe-infra-vm-base/pre.yml
     run: playbooks/kayobe-infra-vm-base/run.yml
-    timeout: 5400
+    timeout: 7200
 
 - job:
     name: kayobe-infra-vm-rocky10
