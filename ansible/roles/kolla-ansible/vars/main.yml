@@ -159,6 +159,7 @@ kolla_feature_flags:
   - manila_backend_glusterfs_nfs
   - manila_backend_hnas
   - manila_backend_vast
+  - manila_backend_weka
   - mariabackup
   - mariadb
   - masakari
